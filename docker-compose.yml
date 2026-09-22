@@ -1,0 +1,76 @@
+# Développement et installation simple (un serveur).
+# Usage : cp .env.example .env ; docker compose up --build ; docker compose exec app flask seed-demo
+name: labqualite
+
+x-app-env: &app-env
+  APP_ENV: ${APP_ENV:-development}
+  SECRET_KEY: ${SECRET_KEY:-dev-uniquement-changer-en-production}
+  BASE_URL: ${BASE_URL:-http://localhost:8000}
+  DATABASE_URL: postgresql+psycopg://labq_app:${LABQ_APP_PASSWORD:-app-dev}@db:5432/labqualite
+  DATABASE_OWNER_URL: postgresql+psycopg://labq_owner:${LABQ_OWNER_PASSWORD:-owner-dev}@db:5432/labqualite
+  DB_APP_ROLE: labq_app
+  MAIL_BACKEND: ${MAIL_BACKEND:-console}
+  SMTP_HOST: ${SMTP_HOST:-}
+  SMTP_PORT: ${SMTP_PORT:-587}
+  SMTP_USER: ${SMTP_USER:-}
+  SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+  MAIL_FROM: ${MAIL_FROM:-LabQualité <no-reply@example.org>}
+  STORAGE_BACKEND: ${STORAGE_BACKEND:-local}
+  STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-}
+  STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-}
+  STRIPE_PRICE_MONTHLY: ${STRIPE_PRICE_MONTHLY:-}
+  STRIPE_PRICE_YEARLY: ${STRIPE_PRICE_YEARLY:-}
+  STRIPE_TAX_ENABLED: ${STRIPE_TAX_ENABLED:-false}
+  SELF_SIGNUP_ENABLED: ${SELF_SIGNUP_ENABLED:-false}
+  LOG_JSON: ${LOG_JSON:-false}
+  FORWARDED_ALLOW_IPS: "*"
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres-dev}
+      LABQ_OWNER_PASSWORD: ${LABQ_OWNER_PASSWORD:-owner-dev}
+      LABQ_APP_PASSWORD: ${LABQ_APP_PASSWORD:-app-dev}
+      TZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./deploy/postgres-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d labqualite"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  app:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      <<: *app-env
+      RUN_MIGRATIONS: "1"
+    ports:
+      - "8000:8000"
+    volumes:
+      - uploads:/data/uploads
+
+  scheduler:
+    build: .
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment: *app-env
+    command: ["/app/deploy/scheduler.sh"]
+    healthcheck:
+      disable: true
+    volumes:
+      - uploads:/data/uploads
+
+volumes:
+  pgdata:
+  uploads:

@@ -521,6 +521,7 @@ class ResultFilters:
     lot_id: uuid.UUID | None = None
     status: str | None = None
     mode: str | None = None
+    run_status: str | None = None
     include_voided: bool = False
 
     def as_dict(self) -> dict:
@@ -551,6 +552,8 @@ def results_query(f: ResultFilters) -> sa.Select:
         stmt = stmt.where(CIQResult.status == f.status)
     if f.mode:
         stmt = stmt.where(CIQResult.mode == f.mode)
+    if f.run_status:
+        stmt = stmt.where(CIQRun.status == f.run_status)
     return stmt
 
 

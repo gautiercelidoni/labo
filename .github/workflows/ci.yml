@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  tests:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    env:
+      TEST_DATABASE_URL: postgresql+psycopg://labq_app:app@localhost:5432/labqualite_test
+      TEST_DATABASE_OWNER_URL: postgresql+psycopg://labq_owner:owner@localhost:5432/labqualite_test
+      TEST_DB_APP_ROLE: labq_app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Bibliothèques système (WeasyPrint, libmagic)
+        run: sudo apt-get update && sudo apt-get install -y libpango-1.0-0 libpangoft2-1.0-0 libmagic1 fonts-dejavu-core
+      - name: Rôles et base de test
+        env:
+          PGPASSWORD: postgres
+        run: |
+          psql -h localhost -U postgres -c "CREATE ROLE labq_owner LOGIN PASSWORD 'owner'"
+          psql -h localhost -U postgres -c "CREATE ROLE labq_app LOGIN PASSWORD 'app'"
+          psql -h localhost -U postgres -c "CREATE DATABASE labqualite_test OWNER labq_owner"
+      - name: Dépendances
+        run: pip install -e ".[test]"
+      - name: Interdiction de session.get sur les modèles (garde-fou statique)
+        run: "! grep -rnE 'db\\.session\\.get\\(' app/"
+      - name: Tests
+        run: pytest --cov=app --cov-report=term-missing:skip-covered

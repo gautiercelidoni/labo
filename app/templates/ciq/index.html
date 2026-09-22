@@ -4,7 +4,7 @@
 {% block content %}
 {% include "ciq/_nav.html" %}
 <div class="spread"><h1>Contrôles qualité internes</h1>
-  {% if pending %}<a class="badge badge-danger" href="{{ url_for('ciq.history', statut='rejected') }}">{{ pending }} série(s) rejetée(s) à traiter</a>{% endif %}
+  {% if pending %}<a class="badge badge-danger" href="{{ url_for('ciq.history', statut_serie='rejected') }}">{{ pending }} série(s) rejetée(s) à traiter</a>{% endif %}
 </div>
 {% if parameters %}
 <div class="table-wrap card">

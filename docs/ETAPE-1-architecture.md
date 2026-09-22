@@ -1,6 +1,7 @@
 # Étape 1 — Architecture et modèle de données
 
-Statut : **proposition à valider** avant l'étape 2.
+Statut : **validée et implémentée** (étapes 2 à 9 réalisées). Les décisions retenues et les écarts
+justifiés sont listés en section 12.
 
 ## 1. Architecture générale
 
@@ -321,3 +322,48 @@ Point d'attention : WeasyPrint nécessite Pango dans l'image Docker (quelques Mo
 8. **WeasyPrint** pour les PDF : à confirmer.
 9. **Création de laboratoire** en libre-service (inscription + essai 30 j) ou uniquement par toi (admin plateforme) au début ? Proposition : libre-service désactivable par variable d'environnement, désactivé au lancement.
 10. **Hébergeur** visé (Scaleway, OVHcloud, Clever Cloud…) : il conditionne le stockage S3 et la stratégie de sauvegarde PostgreSQL documentée à l'étape 7.
+
+## 12. Décisions retenues et écarts d'implémentation
+
+### Décisions de la section 11
+
+| # | Décision retenue |
+|---|---|
+| 1 | Package `app`, produit « LabQualité » (nom provisoire, modifiable sans impact technique) |
+| 2 | Utilisateur multi-labos avec sélecteur de laboratoire actif |
+| 3 | Forfait par laboratoire, plafond de 15 utilisateurs actifs configurable ; prix uniquement dans Stripe |
+| 4 | Pas de RLS PostgreSQL en V1, schéma compatible |
+| 5 | Échéance recalculée depuis la date **effective** de réalisation |
+| 6 | Séquences Westgard réinitialisées au changement de lot, option `chain_lots` par paramètre |
+| 7 | `4-1s` et `10x` en **avertissement** par défaut, configurables en rejet |
+| 8 | WeasyPrint pour les PDF |
+| 9 | Création de laboratoire par l'opérateur (`flask create-lab`) ; libre-service activable par `SELF_SIGNUP_ENABLED` |
+| 10 | Hébergeur non figé : Docker Compose générique, stockage S3 compatible (Scaleway, OVHcloud) |
+
+### Écarts par rapport à la proposition (justifiés)
+
+1. **Table `user_account`** au lieu de `user` : mot réservé PostgreSQL, évite les guillemets dans le SQL
+   (triggers, sauvegardes, requêtes manuelles).
+2. **Unicité `ciq_result (tenant_id, run_id, level_id)` partielle** (`WHERE voided_at IS NULL`) : un
+   résultat annulé doit pouvoir être ressaisi dans la même série sans jamais être modifié.
+3. **`ciq_result` dénormalisé** (`parameter_id`, `run_at`, `mode`) : index `(tenant_id, lot_id, run_at)`
+   demandé, filtres de l'historique et chargement de l'historique des règles sans jointure ;
+   ajout de `rules_not_evaluated` pour tracer les règles non évaluables.
+4. **Mode par niveau** porté par `control_level.mode` (nullable, hérite de `ciq_rule_config.mode`).
+5. **Catégories d'équipement** en table `equipment_category` (administrables) au lieu d'un champ texte.
+6. **Jetons email** : valeur aléatoire de 256 bits dont seule l'empreinte SHA-256 est stockée, plutôt
+   qu'un jeton signé : même garantie (expiration, usage unique vérifiés en base) sans clé de signature
+   supplémentaire.
+7. **Audit filtré** : `audit_event` n'hérite pas de `TenantScoped` (tenant nullable) mais du marqueur
+   `TenantFiltered` : même filtre automatique en lecture.
+8. **Notifications** : une ligne par destinataire (lecture individuelle), avec `message` et `link`.
+9. **Limitation des tentatives** : fenêtre glissante (5 échecs par email, 30 par IP, 15 minutes) ;
+   chaque nouvel échec prolonge le blocage, d'où un délai progressif sans état supplémentaire.
+10. **Planificateur** : conteneur `scheduler` exécutant la commande cron toutes les heures (idempotente),
+    en plus de l'équivalent crontab documenté pour une installation sans Docker.
+11. **Contexte système** : autorisé uniquement pour la route du webhook Stripe et les commandes CLI ;
+    la liste des appartenances à la connexion utilise une option de lecture inter-labos ciblée,
+    limitée à deux fichiers par un test statique.
+12. Champs complémentaires : `subscription.cancel_at_period_end`, `laboratory.notify_by_email`,
+    `ciq_run.justification/justified_*`, `non_conformity.source_ciq_run_id/equipment_id/cancel_reason`,
+    `transmission_comment`.

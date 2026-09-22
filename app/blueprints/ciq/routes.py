@@ -28,6 +28,7 @@ from app.models.actions import CorrectiveAction
 from app.models.ciq import (
     MODE_LABELS,
     RESULT_STATUS_LABELS,
+    RUN_STATUS_LABELS,
     CIQParameter,
     CIQResult,
     CIQRun,
@@ -515,6 +516,7 @@ def _filters_from_args() -> ResultFilters:
     start, end = day("du"), day("au")
     status = args.get("statut") if args.get("statut") in RESULT_STATUS_LABELS else None
     mode = args.get("mode") if args.get("mode") in MODE_LABELS else None
+    run_status = args.get("statut_serie") if args.get("statut_serie") in RUN_STATUS_LABELS else None
     return ResultFilters(
         start=datetime.combine(start, time.min, tz).astimezone(timezone.utc) if start else None,
         end=datetime.combine(end + timedelta(days=1), time.min, tz).astimezone(timezone.utc) if end else None,
@@ -524,6 +526,7 @@ def _filters_from_args() -> ResultFilters:
         lot_id=parse_uuid(args.get("lot")),
         status=status,
         mode=mode,
+        run_status=run_status,
         include_voided=args.get("annules") == "1",
     )
 
@@ -543,7 +546,8 @@ def history():
             lots = [lot for lvl in levels for lot in ciq_service.list_lots(lvl)]
     return render_template("ciq/history.html", page=page, parameters=parameters, levels=levels, lots=lots,
                            equipments=repo(Equipment).all(order_by=Equipment.name), args=request.args,
-                           status_labels=RESULT_STATUS_LABELS, mode_labels=MODE_LABELS)
+                           status_labels=RESULT_STATUS_LABELS, mode_labels=MODE_LABELS,
+                           run_status_labels=RUN_STATUS_LABELS)
 
 
 @bp.route("/historique/export.csv")

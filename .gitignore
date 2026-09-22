@@ -9,3 +9,5 @@ uploads/
 htmlcov/
 *.egg-info/
 backups/
+deploy/nginx/certs/*
+!deploy/nginx/certs/.gitkeep

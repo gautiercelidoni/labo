@@ -31,7 +31,7 @@
         <tbody>
         {% for e in activity %}
           <tr><td class="nowrap">{{ e.occurred_at | dt }}</td><td>{{ e.user.full_name if e.user else "Système" }}</td>
-              <td>{{ action_labels.get(e.action, e.action) }}</td></tr>
+              <td>{{ e.action | action_label }}</td></tr>
         {% endfor %}
         </tbody>
       </table>

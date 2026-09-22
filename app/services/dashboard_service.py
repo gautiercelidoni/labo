@@ -41,7 +41,7 @@ def cards(today: date) -> list[Card]:
                            f"/ciq/historique?statut=warning&du={(today - timedelta(days=7)).isoformat()}",
                            "warning" if warnings else "ok"))
         result.append(Card("ciq_rejected", "Séries CIQ rejetées non traitées", rejected,
-                           "/ciq/historique?statut=rejected", "danger" if rejected else "ok"))
+                           "/ciq/historique?statut_serie=rejected", "danger" if rejected else "ok"))
     if can(P.METROLOGY_VIEW):
         base = (sa.select(MaintenancePlan.id).join(Equipment, Equipment.id == MaintenancePlan.equipment_id)
                 .where(MaintenancePlan.is_active.is_(True), Equipment.archived_at.is_(None)))

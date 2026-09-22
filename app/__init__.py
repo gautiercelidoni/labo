@@ -149,6 +149,9 @@ def _register_template_helpers(app: Flask) -> None:
     app.jinja_env.filters["dt"] = format_datetime
     app.jinja_env.filters["d"] = format_date
     app.jinja_env.filters["num"] = format_number
+    from app.services.audit_service import action_label
+
+    app.jinja_env.filters["action_label"] = action_label
 
     @app.context_processor
     def inject_globals():

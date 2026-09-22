@@ -14,7 +14,7 @@ from app.forms import lab_zone
 from app.models.audit import AuditEvent
 from app.repositories.base import paginate, parse_uuid
 from app.security.permissions import P, require
-from app.services.audit_service import ACTION_LABELS
+from app.services.audit_service import ACTION_LABELS, action_label
 from app.services.export_csv import csv_response
 from app.services.membership_service import member_users
 
@@ -79,7 +79,7 @@ def export():
     stmt, filters = _filtered_query()
     events = db.session.scalars(stmt.limit(100000)).all()
     rows = [
-        [e.occurred_at, e.user.full_name if e.user else "", e.action, ACTION_LABELS.get(e.action, ""),
+        [e.occurred_at, e.user.full_name if e.user else "", e.action, action_label(e.action),
          e.object_type, e.object_id, e.ip, _json(e.before), _json(e.after), e.reason]
         for e in events
     ]

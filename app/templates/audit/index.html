@@ -20,7 +20,7 @@
   <tbody>
   {% for e in page.items %}
     <tr><td class="nowrap">{{ e.occurred_at | dt('%d/%m/%Y %H:%M:%S') }}</td><td>{{ e.user.full_name if e.user else "Système" }}</td>
-      <td>{{ action_labels.get(e.action, e.action) }}<br><code class="muted">{{ e.action }}</code></td>
+      <td>{{ e.action | action_label }}<br><code class="muted">{{ e.action }}</code></td>
       <td>{{ e.object_type or "" }}<br><code class="muted">{{ (e.object_id or "")[:13] }}</code></td>
       <td>{% if e.before or e.after %}<details><summary>Voir</summary>
         {% if e.before %}<strong>Avant</strong><pre class="pre">{{ e.before | tojson(indent=1) }}</pre>{% endif %}

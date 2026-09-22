@@ -17,6 +17,8 @@
     {% for l in lots %}<option value="{{ l.id }}" {% if args.get('lot') == l.id|string %}selected{% endif %}>{{ l.lot_number }}</option>{% endfor %}</select></div>{% endif %}
   <div class="field"><label for="statut">Statut</label><select id="statut" name="statut"><option value="">Tous</option>
     {% for k, v in status_labels.items() %}<option value="{{ k }}" {% if args.get('statut') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="statut_serie">Statut de la série</label><select id="statut_serie" name="statut_serie"><option value="">Tous</option>
+    {% for k, v in run_status_labels.items() %}<option value="{{ k }}" {% if args.get('statut_serie') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
   <div class="field"><label for="mode">Mode</label><select id="mode" name="mode"><option value="">Tous</option>
     {% for k, v in mode_labels.items() %}<option value="{{ k }}" {% if args.get('mode') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
   <label class="check"><input type="checkbox" name="annules" value="1" {% if args.get('annules') == '1' %}checked{% endif %}> Inclure les annulés</label>

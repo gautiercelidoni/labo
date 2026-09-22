@@ -266,3 +266,26 @@ def test_run_status_query(ctx):
     setup = factories.make_ciq_setup(levels=1)
     ciq_service.create_run(setup.parameter, run_at(1), entries(setup, 3.2, comment="x"))
     assert db.session.scalar(sa.select(sa.func.count()).select_from(CIQRun).where(CIQRun.status == "rejected")) == 1
+
+
+def test_history_filter_by_run_status(app, client, world):
+    from tests.conftest import login
+
+    with factories.acting_as(app, world.emails["quality"], world.lab_a):
+        setup = factories.make_ciq_setup(levels=1)
+        ciq_service.create_run(setup.parameter, run_at(3), entries(setup, 3.5, comment="à traiter"))
+        treated, _ = ciq_service.create_run(setup.parameter, run_at(2), entries(setup, -3.5, comment="traité"))
+        ciq_service.justify_run(treated, justification="ok", action_description="action", responsible_id=None,
+                                due_on=None)
+        db.session.commit()
+    login(client, world.emails["reader"])
+    page = client.get("/ciq/historique?statut_serie=rejected").data.decode()
+    assert page.count("<tr") == 2  # en-tête + la seule série rejetée non traitée
+
+
+def test_audit_labels_are_french():
+    from app.services.audit_service import action_label
+
+    assert action_label("ciq.run.created") == "Saisie d'une série CIQ"
+    assert action_label("billing.invoice.paid").startswith("Abonnement")
+    assert action_label("inconnu.x") == "inconnu.x"
