@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pagination %}
+{% block title %}Alertes{% endblock %}
+{% block content %}
+<div class="spread"><h1>Mes alertes</h1>
+  <div class="row">
+    <a href="{{ url_for('notifications.index', non_lues=0 if unread_only else 1) }}">{{ "Toutes" if unread_only else "Non lues seulement" }}</a>
+    <form method="post" action="{{ url_for('notifications.mark_all') }}" class="inline">{{ form.hidden_tag() }}<button type="submit" class="secondary">Tout marquer comme lu</button></form>
+  </div>
+</div>
+<div class="card">
+{% for n in page.items %}
+  <div class="spread notif-row">
+    <span>{% if not n.read_at %}<strong>{% endif %}<span class="badge badge-{{ n.level }}">{{ {"info": "Info", "warning": "Attention", "danger": "Urgent"}[n.level] }}</span>
+      {{ n.message }}{% if not n.read_at %}</strong>{% endif %} <span class="muted small">{{ n.created_at | dt }}</span></span>
+    <form method="post" action="{{ url_for('notifications.open_notification', notification_id=n.id) }}" class="inline">{{ form.hidden_tag() }}<button type="submit" class="link">Ouvrir</button></form>
+  </div>
+{% else %}<p class="muted">Aucune alerte.</p>{% endfor %}
+</div>
+{{ pagination(page, 'notifications.index') }}
+{% endblock %}

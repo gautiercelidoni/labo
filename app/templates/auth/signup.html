@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Créer un laboratoire{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Créer un laboratoire</h1>
+  <p>Essai gratuit de {{ trial_days }} jours, sans carte bancaire. Vous serez l'administrateur du laboratoire.</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.lab_name) }}
+    {{ field(form.full_name) }}
+    {{ field(form.email) }}
+    {{ field(form.password, hint="12 caractères minimum, majuscules, minuscules et chiffres.") }}
+    {{ field(form.confirm) }}
+    <button type="submit">Créer le laboratoire</button>
+  </form>
+</section>
+{% endblock %}

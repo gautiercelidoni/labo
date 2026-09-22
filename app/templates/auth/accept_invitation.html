@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Invitation{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Rejoindre {{ lab.name }}</h1>
+  <p>Invitation pour <strong>{{ invitation.email }}</strong> avec le rôle <strong>{{ role_labels[invitation.role] }}</strong>.</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {% if not existing %}
+      {{ field(form.full_name) }}
+      {{ field(form.password, hint="12 caractères minimum, majuscules, minuscules et chiffres.") }}
+      {{ field(form.confirm) }}
+      <button type="submit">Créer mon compte et rejoindre</button>
+    {% else %}
+      <button type="submit">Accepter l'invitation</button>
+    {% endif %}
+  </form>
+</section>
+{% endblock %}

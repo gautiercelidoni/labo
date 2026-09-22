@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, status_badge %}
+{% block title %}Action corrective{% endblock %}
+{% block content %}
+<section class="card medium">
+  <div class="spread"><h1>Action corrective</h1>{{ status_badge(action.status, action.status_label) }}</div>
+  <p class="pre">{{ action.description }}</p>
+  <dl class="meta">
+    <dt>Origine</dt><dd>{% if action.source_type == 'ciq_run' and source %}<a href="{{ url_for('ciq.run', run_id=source.id) }}">Série CIQ du {{ source.run_at | dt }}</a>
+      {% elif action.source_type == 'non_conformity' and source %}<a href="{{ url_for('non_conformites.detail', nc_id=source.id) }}">{{ source.number }}</a>{% else %}Manuelle{% endif %}</dd>
+    <dt>Responsable</dt><dd>{{ action.responsible.full_name if action.responsible else "—" }}</dd>
+    <dt>Échéance</dt><dd>{{ action.due_on | d }}</dd>
+    <dt>Créée le</dt><dd>{{ action.created_at | dt }}</dd>
+    {% if action.done_on %}<dt>Réalisée le</dt><dd>{{ action.done_on | d }}</dd><dt>Réalisation</dt><dd class="pre">{{ action.done_comment }}</dd>{% endif %}
+    {% if action.validated_at %}<dt>Validée</dt><dd>{{ action.validated_at | dt }} par {{ action.validated_by.full_name }}</dd>{% endif %}
+  </dl>
+</section>
+{% if can_complete %}
+<section class="card medium"><h2>Déclarer l'action réalisée</h2>
+  <form method="post" action="{{ url_for('actions.complete', action_id=action.id) }}" novalidate>
+    {{ complete_form.hidden_tag() }}{{ field(complete_form.done_on) }}{{ field(complete_form.comment) }}<button type="submit">Enregistrer</button></form>
+</section>
+{% endif %}
+{% if can_validate and action.status == 'done' %}
+<section class="card medium"><h2>Valider l'action</h2>
+  <form method="post" action="{{ url_for('actions.validate', action_id=action.id) }}" novalidate>
+    {{ validate_form.hidden_tag() }}{{ field(validate_form.comment) }}<button type="submit">Valider</button></form>
+</section>
+{% endif %}
+{% if can_validate and action.status != 'open' %}
+<section class="card medium"><details><summary>Rouvrir l'action</summary>
+  <form method="post" action="{{ url_for('actions.reopen', action_id=action.id) }}" novalidate>
+    {{ reopen_form.hidden_tag() }}{{ field(reopen_form.reason) }}<button type="submit" class="secondary">Rouvrir</button></form></details>
+</section>
+{% endif %}
+{% endblock %}

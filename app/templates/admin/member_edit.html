@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Droits de {{ membership.user.full_name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<section class="card narrow">
+  <h1>{{ membership.user.full_name }}</h1>
+  <p class="muted">{{ membership.user.email }}</p>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.role) }}
+    {{ field(form.team_id) }}
+    <button type="submit">Enregistrer</button>
+    <a href="{{ url_for('admin.members') }}">Annuler</a>
+  </form>
+</section>
+{% endblock %}

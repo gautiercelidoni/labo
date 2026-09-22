@@ -1,0 +1,9 @@
+Bonjour,
+
+{{ inviter.full_name }} vous invite à rejoindre le laboratoire « {{ lab.name }} » sur LabQualité.
+
+Pour accepter l'invitation, ouvrez ce lien (valable {{ days }} jours) :
+
+{{ link }}
+
+— LabQualité

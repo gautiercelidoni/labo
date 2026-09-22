@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, pagination %}
+{% block title %}Actions correctives{% endblock %}
+{% block content %}
+<div class="spread"><h1>Actions correctives</h1>
+  {% if can('corrective_action.create') %}<a class="button" href="{{ url_for('actions.new') }}">Nouvelle action</a>{% endif %}</div>
+<form method="get" class="filters row">
+  <div class="field"><label for="statut">Statut</label><select id="statut" name="statut"><option value="">Tous</option>
+    {% for k, v in status_labels.items() %}<option value="{{ k }}" {% if args.get('statut') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <label class="check"><input type="checkbox" name="retard" value="1" {% if args.get('retard') == '1' %}checked{% endif %}> En retard</label>
+  <label class="check"><input type="checkbox" name="mes" value="1" {% if args.get('mes') == '1' %}checked{% endif %}> Mes actions</label>
+  <button type="submit">Filtrer</button>
+  {% if can('export.run') %}<a class="button button-secondary" href="{{ url_for('actions.export', **args.to_dict()) }}">Export CSV</a>{% endif %}
+</form>
+<div class="table-wrap"><table>
+  <thead><tr><th>Description</th><th>Origine</th><th>Responsable</th><th>Échéance</th><th>Statut</th></tr></thead>
+  <tbody>
+  {% for a in page.items %}
+    <tr><td><a href="{{ url_for('actions.detail', action_id=a.id) }}">{{ a.description | truncate(90) }}</a></td>
+      <td>{{ {"ciq_run": "Rejet CIQ", "non_conformity": "Non-conformité", "manual": "Manuelle"}[a.source_type] }}</td>
+      <td>{{ a.responsible.full_name if a.responsible else "—" }}</td>
+      <td class="nowrap">{{ a.due_on | d }}{% if a.status == 'open' and a.due_on and a.due_on < today %} {{ status_badge('overdue', 'En retard') }}{% endif %}</td>
+      <td>{{ status_badge(a.status, a.status_label) }}</td></tr>
+  {% else %}<tr><td colspan="5" class="muted">Aucune action.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{{ pagination(page, 'actions.index') }}
+{% endblock %}

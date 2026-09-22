@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, pagination %}
+{% block title %}Parc d'équipements{% endblock %}
+{% block content %}
+{% include "metrologie/_nav.html" %}
+<h1>Parc d'équipements</h1>
+<form method="get" class="filters row">
+  <div class="field"><label for="q">Recherche</label><input type="text" id="q" name="q" value="{{ args.get('q', '') }}" placeholder="Nom, identifiant, n° de série…"></div>
+  <div class="field"><label for="statut">Statut</label><select id="statut" name="statut"><option value="">Tous</option>
+    {% for k, v in status_labels.items() %}<option value="{{ k }}" {% if args.get('statut') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="categorie">Catégorie</label><select id="categorie" name="categorie"><option value="">Toutes</option>
+    {% for c in categories %}<option value="{{ c.id }}" {% if args.get('categorie') == c.id|string %}selected{% endif %}>{{ c.name }}</option>{% endfor %}</select></div>
+  <label class="check"><input type="checkbox" name="archives" value="1" {% if args.get('archives') == '1' %}checked{% endif %}> Inclure les réformés</label>
+  <button type="submit">Filtrer</button>
+  {% if can('export.run') %}<a class="button button-secondary" href="{{ url_for('metrologie.equipment_csv') }}">Export CSV</a>{% endif %}
+</form>
+<div class="table-wrap"><table>
+  <thead><tr><th>Identifiant</th><th>Équipement</th><th>Catégorie</th><th>Localisation</th><th>Statut</th><th>Criticité</th><th>Prochaine échéance</th></tr></thead>
+  <tbody>
+  {% for e in page.items %}{% set due = next_due.get(e.id) %}{% set st = due_state(due, today) %}
+    <tr><td>{{ e.internal_id }}</td><td><a href="{{ url_for('metrologie.equipment', equipment_id=e.id) }}">{{ e.name }}</a></td>
+      <td>{{ e.category.name if e.category else "—" }}</td><td>{{ e.location or "—" }}</td>
+      <td>{{ status_badge(e.status, e.status_label) }}</td><td>{{ e.criticality_label }}</td>
+      <td class="nowrap">{{ due | d }} {% if due %}{{ status_badge(st, due_labels[st]) }}{% endif %}</td></tr>
+  {% else %}<tr><td colspan="7" class="muted">Aucun équipement.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{{ pagination(page, 'metrologie.index') }}
+{% endblock %}

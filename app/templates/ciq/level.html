@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Niveau {{ level.label }}{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<h1>{{ parameter.name }} — niveau {{ level.label }}</h1>
+<p><a href="{{ url_for('ciq.parameter', parameter_id=parameter.id) }}">« Retour au paramètre</a></p>
+<div class="cols-2">
+<section class="card">
+  <h2>Lots</h2>
+  {% if lots %}
+  <table>
+    <thead><tr><th>Lot</th><th>Fabricant</th><th>Utilisation</th><th>Péremption</th><th>Limites</th></tr></thead>
+    <tbody>
+    {% for lot in lots %}{% set lim = active_limits.get(lot.id) %}
+      <tr><td><a href="{{ url_for('ciq.lot', lot_id=lot.id) }}">{{ lot.lot_number }}</a></td><td>{{ lot.manufacturer or "—" }}</td>
+        <td>{{ lot.in_use_from | d }} → {{ lot.in_use_to | d }}</td><td>{{ lot.expires_on | d }}</td>
+        <td>{% if lim %}{{ lim.mean | num }} ± {{ lim.sd | num }}{% else %}<span class="error">à définir</span>{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Aucun lot.</p>{% endif %}
+  {% if can('ciq.config.edit') %}
+    <h3>Nouveau lot</h3>
+    <form method="post" action="{{ url_for('ciq.add_lot', level_id=level.id) }}" novalidate>
+      {{ lot_form.hidden_tag() }}
+      <div class="row">{{ field(lot_form.lot_number) }}{{ field(lot_form.manufacturer) }}</div>
+      <div class="row">{{ field(lot_form.in_use_from) }}{{ field(lot_form.in_use_to) }}{{ field(lot_form.expires_on) }}</div>
+      <button type="submit">Ajouter le lot</button>
+    </form>
+  {% endif %}
+</section>
+{% if can('ciq.config.edit') %}
+<section class="card">
+  <h2>Niveau</h2>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}{{ field(form.label) }}{{ field(form.sort_order) }}{{ field(form.mode) }}{{ field(form.is_active) }}
+    <button type="submit">Enregistrer</button>
+  </form>
+</section>
+{% endif %}
+</div>
+{% endblock %}

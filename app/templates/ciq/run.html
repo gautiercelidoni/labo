@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, status_badge %}
+{% block title %}Série CIQ{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<div class="spread">
+  <h1>Série du {{ run.run_at | dt }} — {{ parameter.name }}</h1>
+  <div>{{ status_badge(run.status, run.status_label) }}</div>
+</div>
+<p>Équipement : {{ run.equipment.name }} · Technicien : {{ run.operator.full_name if run.operator else "—" }} ·
+  <a href="{{ url_for('ciq.chart', parameter_id=parameter.id) }}">Graphique</a></p>
+<div class="table-wrap card">
+<table>
+  <thead><tr><th>Niveau</th><th>Lot</th><th class="num">Valeur</th><th class="num">Écart</th><th class="num">z</th><th>Statut</th><th>Règles</th><th>Commentaire</th><th></th></tr></thead>
+  <tbody>
+  {% for r in results %}
+    <tr class="{% if r.voided_at %}voided{% endif %}">
+      <td>{{ r.level.label }}</td><td>{{ r.lot.lot_number }}</td>
+      <td class="num">{{ r.value | num(parameter.decimals) }}</td><td class="num">{{ r.deviation | num(parameter.decimals) }}</td>
+      <td class="num">{{ r.z_score | num(2) }}</td>
+      <td>{{ status_badge(r.status, status_labels[r.status]) }}</td>
+      <td class="small">{% for h in r.rules_triggered %}<span title="{{ h.message }}">{{ h.rule }}</span> ({{ "rejet" if h.severity == "reject" else "alerte" }}){% if not loop.last %}, {% endif %}{% endfor %}
+        {% if r.rules_not_evaluated %}<br><span class="muted" title="{% for n in r.rules_not_evaluated %}{{ n.rule }} : {{ n.reason }}&#10;{% endfor %}">{{ r.rules_not_evaluated | length }} règle(s) non évaluée(s)</span>{% endif %}</td>
+      <td class="small">{{ r.comment or "" }}{% if r.voided_at %}<br><strong>Annulé le {{ r.voided_at | dt }}</strong> : {{ r.void_reason }}{% endif %}</td>
+      <td>
+        {% if not r.voided_at and can('ciq.result.void') %}
+          <details><summary class="small">Annuler</summary>
+            <form method="post" action="{{ url_for('ciq.void_result', result_id=r.id) }}" novalidate>
+              {{ void_form.hidden_tag() }}{{ field(void_form.reason) }}<button type="submit" class="danger">Annuler ce résultat</button>
+            </form>
+          </details>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+
+{% if missing_levels and can('ciq.result.create') %}
+<section class="card">
+  <h2>Ressaisie d'un niveau</h2>
+  <form method="post" action="{{ url_for('ciq.reenter', run_id=run.id) }}" class="row" novalidate>
+    {{ reentry.hidden_tag() }}
+    {{ field(reentry.level_id) }}{{ field(reentry.lot_id) }}{{ field(reentry.value) }}{{ field(reentry.comment) }}
+    <button type="submit">Enregistrer</button>
+  </form>
+</section>
+{% endif %}
+
+{% if run.status in ("rejected", "justified") %}
+<section class="card">
+  <h2>Traitement du rejet</h2>
+  {% if run.status == "justified" %}
+    <p><strong>Justification</strong> ({{ run.justified_at | dt }}) : <span class="pre">{{ run.justification }}</span></p>
+  {% endif %}
+  {% if actions %}
+    <h3>Actions correctives</h3>
+    <ul>{% for a in actions %}<li><a href="{{ url_for('actions.detail', action_id=a.id) }}">{{ a.description }}</a> — {{ status_badge(a.status, a.status_label) }}
+      {% if a.due_on %}échéance {{ a.due_on | d }}{% endif %}</li>{% endfor %}</ul>
+  {% endif %}
+  {% if run.status == "rejected" %}
+    {% if can('ciq.run.justify') %}
+      <p class="flash flash-danger">Série rejetée : aucune validation définitive sans justification et action corrective.</p>
+      <form method="post" action="{{ url_for('ciq.justify_run', run_id=run.id) }}" novalidate>
+        {{ justify.hidden_tag() }}
+        {{ field(justify.justification) }}
+        {% if actions %}{{ field(justify.existing_action_id) }}{% endif %}
+        {{ field(justify.action_description, hint="Obligatoire si aucune action existante n'est choisie.") }}
+        <div class="row">{{ field(justify.responsible_id) }}{{ field(justify.due_on) }}</div>
+        <button type="submit">Enregistrer le traitement du rejet</button>
+      </form>
+    {% else %}
+      <p class="muted">Le traitement du rejet est réservé au responsable qualité ou à l'administrateur.</p>
+    {% endif %}
+  {% endif %}
+  {% if can('nc.create') %}
+    <form method="post" action="{{ url_for('non_conformites.from_run', run_id=run.id) }}" class="inline">
+      {{ action_form.hidden_tag() }}<button type="submit" class="secondary">Convertir en non-conformité</button>
+    </form>
+  {% endif %}
+</section>
+{% endif %}
+{% endblock %}

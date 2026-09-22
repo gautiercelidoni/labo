@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}{{ "Modifier " ~ equipment.name if equipment else "Nouvel équipement" }}{% endblock %}
+{% block content %}
+{% include "metrologie/_nav.html" %}
+<section class="card medium">
+  <h1>{{ "Modifier « " ~ equipment.name ~ " »" if equipment else "Nouvel équipement" }}</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="row">{{ field(form.name) }}{{ field(form.internal_id) }}{{ field(form.category_id) }}</div>
+    <div class="row">{{ field(form.manufacturer) }}{{ field(form.model) }}{{ field(form.serial_number) }}</div>
+    <div class="row">{{ field(form.location) }}{{ field(form.commissioned_on) }}{{ field(form.responsible_id) }}</div>
+    <div class="row">{{ field(form.status) }}{{ field(form.criticality) }}</div>
+    {{ field(form.notes) }}
+    <button type="submit">Enregistrer</button>
+  </form>
+</section>
+{% endblock %}

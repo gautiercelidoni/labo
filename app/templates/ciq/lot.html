@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Lot {{ lot.lot_number }}{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<h1>{{ parameter.name }} — {{ level.label }} — lot {{ lot.lot_number }}</h1>
+<p><a href="{{ url_for('ciq.level', level_id=level.id) }}">« Retour au niveau</a> · Mode du niveau : <strong>{{ mode_labels[mode] }}</strong></p>
+<section class="card">
+  <h2>Jeu de limites en vigueur</h2>
+  {% if active %}
+    <dl class="meta">
+      <dt>{{ "Moyenne" if active.mode == "shewhart" else "Cible" }}</dt><dd>{{ active.mean | num }} {{ parameter.unit or "" }}</dd>
+      <dt>Écart-type</dt><dd>{{ active.sd | num }}</dd>
+      <dt>Origine</dt><dd>{{ {"supplier": "Fournisseur", "lab": "Laboratoire", "computed": "Calculée"}[active.source] }}
+        {% if active.n_reference %}({{ active.n_reference }} valeurs du {{ active.reference_from | dt }} au {{ active.reference_to | dt }}){% endif %}</dd>
+      <dt>En vigueur depuis</dt><dd>{{ active.valid_from | dt }}</dd>
+      {% if active.mode == "shewhart" %}<dt>Limites</dt><dd>surveillance {{ (active.mean - 2 * active.sd) | num }} – {{ (active.mean + 2 * active.sd) | num }} ;
+        action {{ (active.mean - 3 * active.sd) | num }} – {{ (active.mean + 3 * active.sd) | num }}</dd>{% endif %}
+    </dl>
+  {% else %}<p class="error">Aucune limite définie : la saisie est impossible pour ce lot.</p>{% endif %}
+</section>
+{% if can('ciq.config.edit') %}
+<div class="cols-2">
+  <section class="card">
+    <h2>Saisir un jeu de limites</h2>
+    <p class="small muted">Remplace le jeu en vigueur (motif obligatoire). Les résultats déjà saisis conservent leurs limites d'origine.</p>
+    <form method="post" action="{{ url_for('ciq.set_limits', lot_id=lot.id) }}" novalidate>
+      {{ limits_form.hidden_tag() }}
+      <div class="row">{{ field(limits_form.mode) }}{{ field(limits_form.mean) }}{{ field(limits_form.sd) }}{{ field(limits_form.source) }}</div>
+      {{ field(limits_form.reason) }}
+      <button type="submit">Enregistrer les limites</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Calculer les limites sur une période de référence</h2>
+    <p class="small muted">Recalcul manuel uniquement (jamais automatique). Minimum recommandé : {{ config.min_reference_points }} valeurs.</p>
+    <form method="get" class="row">
+      <div class="field"><label for="apercu_du">Aperçu du</label><input type="datetime-local" id="apercu_du" name="apercu_du" value="{{ request.args.get('apercu_du', '') }}"></div>
+      <div class="field"><label for="apercu_au">au</label><input type="datetime-local" id="apercu_au" name="apercu_au" value="{{ request.args.get('apercu_au', '') }}"></div>
+      <button type="submit" class="secondary">Aperçu</button>
+    </form>
+    {% if preview %}
+      <p class="flash {% if preview.sufficient %}flash-info{% else %}flash-warning{% endif %}">
+        {{ preview.n }} valeurs : moyenne {{ preview.mean | num }}, écart-type {{ preview.sd | num }}.
+        {% if not preview.sufficient %}Attention : moins que le minimum de {{ config.min_reference_points }} valeurs.{% endif %}</p>
+    {% endif %}
+    <form method="post" action="{{ url_for('ciq.compute_limits', lot_id=lot.id) }}" novalidate>
+      {{ reference_form.hidden_tag() }}
+      <div class="row">{{ field(reference_form.mode) }}{{ field(reference_form.ref_from) }}{{ field(reference_form.ref_to) }}</div>
+      {{ field(reference_form.reason) }}
+      {{ field(reference_form.accept_insufficient) }}
+      <button type="submit">Calculer et enregistrer</button>
+    </form>
+  </section>
+</div>
+<section class="card">
+  <h2>Lot</h2>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="row">{{ field(form.lot_number) }}{{ field(form.manufacturer) }}{{ field(form.in_use_from) }}{{ field(form.in_use_to) }}{{ field(form.expires_on) }}</div>
+    <button type="submit">Enregistrer</button>
+  </form>
+</section>
+{% endif %}
+<section class="card">
+  <h2>Historique des jeux de limites</h2>
+  <table>
+    <thead><tr><th>Du</th><th>Au</th><th>Mode</th><th class="num">Cible / moyenne</th><th class="num">s</th><th>Origine</th><th>Motif</th><th>Par</th></tr></thead>
+    <tbody>
+    {% for h in history %}
+      <tr><td>{{ h.valid_from | dt }}</td><td>{{ h.valid_to | dt }}</td><td>{{ mode_labels[h.mode] }}</td>
+        <td class="num">{{ h.mean | num }}</td><td class="num">{{ h.sd | num }}</td><td>{{ h.source }}{% if h.n_reference %} (n={{ h.n_reference }}){% endif %}</td>
+        <td>{{ h.reason or "—" }}</td><td>{{ h.created_by.full_name if h.created_by else "—" }}</td></tr>
+    {% else %}<tr><td colspan="8" class="muted">Aucun jeu de limites.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

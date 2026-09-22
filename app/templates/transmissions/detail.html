@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, status_badge, attachments_list %}
+{% block title %}{{ t.title }}{% endblock %}
+{% block content %}
+<section class="card medium">
+  <div class="spread"><h1>{{ t.title }}</h1><div>{{ status_badge(t.priority, t.priority_label) }} {{ status_badge(t.status, t.status_label) }}</div></div>
+  <p class="muted">{{ t.category_label }} · par {{ t.author.full_name }} le {{ t.created_at | dt }}{% if t.due_on %} · échéance {{ t.due_on | d }}{% endif %}</p>
+  <div class="pre">{{ t.body }}</div>
+  <h2>Pièces jointes</h2>
+  {{ attachments_list(attachments) }}
+  {% if can_act and can('files.upload') and t.status != 'archived' %}
+    <form method="post" action="{{ url_for('transmissions.upload', transmission_id=t.id) }}" enctype="multipart/form-data" class="row" novalidate>
+      {{ upload_form.hidden_tag() }}{{ field(upload_form.files) }}<button type="submit" class="secondary">Ajouter</button></form>
+  {% endif %}
+</section>
+<div class="cols-2">
+  <section class="card">
+    <h2>Accusés de lecture</h2>
+    <ul>
+      {% for r in receipts %}<li>{{ r.user.full_name }} — lu le {{ r.read_at | dt }}</li>{% endfor %}
+      {% for uid, u in expected.items() if uid not in read_by %}<li class="muted">{{ u.full_name }} — non lu</li>{% endfor %}
+    </ul>
+  </section>
+  <section class="card">
+    <h2>Suivi</h2>
+    {% for c in comments %}<p><strong>{{ c.author.full_name }}</strong> <span class="muted small">{{ c.created_at | dt }}</span><br><span class="pre">{{ c.body }}</span></p>
+    {% else %}<p class="muted">Aucun commentaire.</p>{% endfor %}
+    {% if can_act and t.status != 'archived' %}
+      <form method="post" action="{{ url_for('transmissions.comment', transmission_id=t.id) }}" novalidate>
+        {{ comment_form.hidden_tag() }}{{ field(comment_form.body) }}<button type="submit" class="secondary">Commenter</button></form>
+      {% if status_form.status.choices %}
+      <form method="post" action="{{ url_for('transmissions.change_status', transmission_id=t.id) }}" novalidate>
+        {{ status_form.hidden_tag() }}{{ field(status_form.status) }}{{ field(status_form.comment) }}<button type="submit">Changer le statut</button></form>
+      {% endif %}
+    {% endif %}
+  </section>
+</div>
+<p class="small muted">Une transmission n'est jamais supprimée : elle peut être archivée.</p>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, status_badge %}
+{% block title %}Saisie CIQ{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<h1>Saisie d'une série CIQ</h1>
+<form method="get" class="filters row">
+  <div class="field"><label for="parametre">Paramètre</label>
+    <select id="parametre" name="parametre" data-autosubmit>
+      <option value="">— Choisir —</option>
+      {% for p in parameters %}<option value="{{ p.id }}" {% if parameter and p.id == parameter.id %}selected{% endif %}>{{ p.equipment.name }} — {{ p.name }}</option>{% endfor %}
+    </select></div>
+  <noscript><button type="submit">Afficher</button></noscript>
+</form>
+{% if parameter %}
+<form method="post" class="card" novalidate>
+  {{ form.hidden_tag() }}
+  <input type="hidden" name="parametre" value="{{ parameter.id }}">
+  <div class="row">{{ field(form.run_at) }}{{ field(form.operator_id) }}</div>
+  {% if rows %}
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Niveau</th><th>Mode</th><th>Lot</th><th>Valeur ({{ parameter.unit or "—" }})</th><th>Commentaire</th></tr></thead>
+    <tbody>
+    {% for row in rows %}
+      {% set lvl = row.level %}
+      <tr>
+        <td><strong>{{ lvl.label }}</strong></td>
+        <td class="small">{{ mode_labels[row.mode] }}</td>
+        <td><select name="lot_{{ lvl.id }}" aria-label="Lot {{ lvl.label }}">
+          {% for lot in row.lots %}<option value="{{ lot.id }}" {% if (row.lot_id and row.lot_id == lot.id|string) or (not row.lot_id and row.current_lot and row.current_lot.id == lot.id) %}selected{% endif %}>{{ lot.lot_number }}</option>{% else %}<option value="">aucun lot</option>{% endfor %}
+        </select></td>
+        <td><input type="text" name="value_{{ lvl.id }}" value="{{ row.value }}" inputmode="decimal" autocomplete="off" aria-label="Valeur {{ lvl.label }}"></td>
+        <td><input type="text" name="comment_{{ lvl.id }}" value="{{ row.comment }}" maxlength="2000" aria-label="Commentaire {{ lvl.label }}"></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <p class="small muted">Laissez vide un niveau non passé dans cette série. Virgule ou point acceptés. Commentaire obligatoire en cas d'alerte ou de rejet selon la configuration.</p>
+  {% if previews %}
+    <div class="flash flash-warning">
+      <strong>Série non enregistrée :</strong>
+      <ul>{% for p in previews %}{% for e in p.errors %}<li>{{ e }}</li>{% endfor %}
+        {% if p.evaluation and p.evaluation.hits %}<li>{{ p.entry.level.label }} : z = {{ p.evaluation.z | num(2) }} — {{ p.evaluation.triggered | join(", ") }}</li>{% endif %}{% endfor %}</ul>
+    </div>
+  {% endif %}
+  <button type="submit">Enregistrer et évaluer</button>
+  {% else %}
+    <p class="muted">Aucun niveau actif : configurez le paramètre.</p>
+  {% endif %}
+</form>
+{% endif %}
+{% endblock %}

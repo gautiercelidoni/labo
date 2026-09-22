@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, status_badge, attachments_list %}
+{% block title %}{{ nc.number }}{% endblock %}
+{% block content %}
+<div class="spread">
+  <h1>{{ nc.number }} — {{ nc.title }}</h1>
+  <div class="row">{{ status_badge(nc.severity, nc.severity_label) }} {{ status_badge(nc.status, nc.status_label) }}
+    {% if can('export.run') %}<a class="button button-secondary" href="{{ url_for('non_conformites.sheet_pdf', nc_id=nc.id) }}">Fiche PDF</a>{% endif %}</div>
+</div>
+<div class="cols-2">
+  <section class="card">
+    <h2>Déclaration</h2>
+    <dl class="meta">
+      <dt>Détectée le</dt><dd>{{ nc.detected_on | d }} par {{ nc.detected_by.full_name if nc.detected_by else "—" }}</dd>
+      <dt>Origine</dt><dd>{{ nc.origin_label }}{% if source_run %} — <a href="{{ url_for('ciq.run', run_id=source_run.id) }}">série CIQ du {{ source_run.run_at | dt }}</a>{% endif %}</dd>
+      <dt>Responsable</dt><dd>{{ nc.responsible.full_name if nc.responsible else "—" }}</dd>
+      <dt>Date cible</dt><dd>{{ nc.target_date | d }}</dd>
+      {% if nc.closed_on %}<dt>Clôturée le</dt><dd>{{ nc.closed_on | d }} par {{ nc.validated_by.full_name if nc.validated_by else "—" }}</dd>{% endif %}
+      {% if nc.cancel_reason %}<dt>Motif d'annulation</dt><dd>{{ nc.cancel_reason }}</dd>{% endif %}
+    </dl>
+    <h3>Description</h3><p class="pre">{{ nc.description }}</p>
+    {% if nc.impact %}<h3>Impact</h3><p class="pre">{{ nc.impact }}</p>{% endif %}
+    {% if nc.immediate_action %}<h3>Mesure immédiate</h3><p class="pre">{{ nc.immediate_action }}</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Statut</h2>
+    {% if editable and status_form.status.choices %}
+      {% if nc.status == 'verification' and closure_problems %}
+        <div class="flash flash-warning small">Avant clôture : <ul>{% for p in closure_problems %}<li>{{ p }}</li>{% endfor %}</ul></div>
+      {% endif %}
+      <form method="post" action="{{ url_for('non_conformites.change_status', nc_id=nc.id) }}" novalidate>
+        {{ status_form.hidden_tag() }}{{ field(status_form.status) }}{{ field(status_form.comment) }}<button type="submit">Changer le statut</button></form>
+    {% endif %}
+    <h3>Historique des statuts</h3>
+    <ul class="small">{% for h in history %}<li>{{ h.changed_at | dt }} — {{ status_labels[h.from_status] if h.from_status else "∅" }} → {{ status_labels[h.to_status] }}
+      par {{ h.changed_by.full_name if h.changed_by else "—" }}{% if h.comment %} : {{ h.comment }}{% endif %}</li>{% endfor %}</ul>
+  </section>
+</div>
+<section class="card">
+  <h2>Analyse, actions et efficacité</h2>
+  {% if editable and can('nc.edit') %}
+    <form method="post" action="{{ url_for('non_conformites.edit_analysis', nc_id=nc.id) }}" novalidate>
+      {{ analysis.hidden_tag() }}{{ field(analysis.root_cause) }}{{ field(analysis.no_action_justification) }}
+      {{ field(analysis.effectiveness_check) }}{{ field(analysis.effectiveness_justification) }}<button type="submit">Enregistrer l'analyse</button></form>
+  {% else %}
+    <dl class="meta"><dt>Analyse de cause</dt><dd class="pre">{{ nc.root_cause or "—" }}</dd>
+      <dt>Non-action</dt><dd class="pre">{{ nc.no_action_justification or "—" }}</dd>
+      <dt>Efficacité</dt><dd class="pre">{{ nc.effectiveness_check or nc.effectiveness_justification or "—" }}</dd></dl>
+  {% endif %}
+  <h3>Actions correctives</h3>
+  <ul>{% for a in actions %}<li><a href="{{ url_for('actions.detail', action_id=a.id) }}">{{ a.description }}</a> — {{ status_badge(a.status, a.status_label) }}</li>
+    {% else %}<li class="muted">Aucune action corrective.</li>{% endfor %}</ul>
+  {% if editable and can('nc.edit') and can('corrective_action.create') %}
+    <details><summary>Ajouter une action corrective</summary>
+      <form method="post" action="{{ url_for('non_conformites.add_action', nc_id=nc.id) }}" novalidate>
+        {{ action_form.hidden_tag() }}{{ field(action_form.description) }}<div class="row">{{ field(action_form.responsible_id) }}{{ field(action_form.due_on) }}</div>
+        <button type="submit">Ajouter</button></form></details>
+  {% endif %}
+</section>
+<div class="cols-2">
+  <section class="card"><h2>Pièces jointes</h2>{{ attachments_list(attachments) }}
+    {% if editable and can('files.upload') %}
+      <form method="post" action="{{ url_for('non_conformites.upload', nc_id=nc.id) }}" enctype="multipart/form-data" class="row" novalidate>
+        {{ upload_form.hidden_tag() }}{{ field(upload_form.file) }}<button type="submit" class="secondary">Ajouter</button></form>
+    {% endif %}</section>
+  {% if editable and (can('nc.edit') or (nc.status == 'draft' and nc.created_by_id == current_user.id)) %}
+  <section class="card"><details><summary>Modifier la déclaration</summary>
+    <form method="post" action="{{ url_for('non_conformites.edit', nc_id=nc.id) }}" novalidate>{{ form.hidden_tag() }}{% include "non_conformites/_form_fields.html" %}
+      <button type="submit">Enregistrer</button></form></details></section>
+  {% endif %}
+</div>
+{% endblock %}

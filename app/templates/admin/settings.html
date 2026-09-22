@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Paramètres du laboratoire{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<section class="card medium">
+  <h1>Paramètres du laboratoire</h1>
+  {% if lab.logo_attachment_id %}<p><img src="{{ url_for('files.lab_logo') }}" alt="Logo du laboratoire" height="60"></p>{% endif %}
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.name) }}
+    {{ field(form.timezone, hint="Les dates sont stockées en UTC et affichées dans ce fuseau.") }}
+    <div class="row">{{ field(form.siret) }}{{ field(form.accreditation) }}</div>
+    {{ field(form.address) }}
+    {{ field(form.retention_days, hint="Durée de conservation déclarée des données qualité (les données ne sont jamais supprimées automatiquement).") }}
+    {{ field(form.notify_by_email) }}
+    {{ field(form.logo, hint="Affiché sur les rapports PDF.") }}
+    <button type="submit">Enregistrer</button>
+  </form>
+</section>
+{% endblock %}

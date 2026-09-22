@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Graphiques {{ parameter.name }}{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<h1>{{ parameter.name }} — {{ parameter.equipment.name }}</h1>
+<form method="get" class="filters row">
+  <div class="field"><label for="du">Du</label><input type="date" id="du" name="du" value="{{ args.get('du', '') }}"></div>
+  <div class="field"><label for="au">Au</label><input type="date" id="au" name="au" value="{{ args.get('au', '') }}"></div>
+  <button type="submit">Afficher</button>
+  <a href="{{ url_for('ciq.parameter', parameter_id=parameter.id) }}">Configuration</a>
+</form>
+<p class="small muted">Points bleus : acceptés ; orange : alerte ; croix rouges : rejet. Trait vert : changement de lot ;
+  trait violet pointillé : changement de jeu de limites. Cliquez sur un point pour ouvrir la série.</p>
+{% for lvl in levels %}
+  <section class="card">
+    <h2>{{ lvl.label }} — {{ "Carte de contrôle (Shewhart)" if modes[lvl.id] == "shewhart" else "Levey-Jennings (Westgard)" }}</h2>
+    <div class="chart-box">
+      <canvas data-chart-url="{{ url_for('ciq.chart_data', parameter_id=parameter.id, level_id=lvl.id, du=args.get('du'), au=args.get('au')) }}"
+              aria-label="Graphique du niveau {{ lvl.label }}" role="img"></canvas>
+      <p class="chart-empty muted" hidden>Aucun résultat sur la période.</p>
+    </div>
+  </section>
+{% else %}
+  <p class="muted">Aucun niveau configuré.</p>
+{% endfor %}
+{% endblock %}

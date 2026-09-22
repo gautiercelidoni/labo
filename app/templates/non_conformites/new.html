@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Déclarer une non-conformité{% endblock %}
+{% block content %}
+<section class="card medium">
+  <h1>Déclarer une non-conformité</h1>
+  <form method="post" novalidate>{{ form.hidden_tag() }}{% include "non_conformites/_form_fields.html" %}
+    <button type="submit">Créer (brouillon)</button></form>
+</section>
+{% endblock %}

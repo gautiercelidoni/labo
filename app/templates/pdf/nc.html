@@ -1,0 +1,31 @@
+{% extends "pdf/base.html" %}
+{% block content %}
+{% if single %}{% set nc = items[0] %}
+  <table>
+    <tr><th>Numéro</th><td>{{ nc.number }}</td><th>Statut</th><td>{{ nc.status_label }}</td></tr>
+    <tr><th>Détectée le</th><td>{{ nc.detected_on | d }}</td><th>Par</th><td>{{ nc.detected_by.full_name if nc.detected_by else "—" }}</td></tr>
+    <tr><th>Origine</th><td>{{ nc.origin_label }}</td><th>Gravité</th><td>{{ nc.severity_label }}</td></tr>
+    <tr><th>Responsable</th><td>{{ nc.responsible.full_name if nc.responsible else "—" }}</td><th>Date cible</th><td>{{ nc.target_date | d }}</td></tr>
+    <tr><th>Clôture</th><td>{{ nc.closed_on | d }}</td><th>Validée par</th><td>{{ nc.validated_by.full_name if nc.validated_by else "—" }}</td></tr>
+  </table>
+  <h2>{{ nc.title }}</h2><p class="pre">{{ nc.description }}</p>
+  <h3>Impact</h3><p class="pre">{{ nc.impact or "—" }}</p>
+  <h3>Mesure immédiate</h3><p class="pre">{{ nc.immediate_action or "—" }}</p>
+  <h3>Analyse de cause</h3><p class="pre">{{ nc.root_cause or "—" }}</p>
+  <h3>Actions correctives</h3>
+  <ul>{% for a in actions %}<li>{{ a.description }} — {{ a.status_label }}{% if a.due_on %} (échéance {{ a.due_on | d }}){% endif %}</li>{% else %}<li>{{ nc.no_action_justification or "Aucune" }}</li>{% endfor %}</ul>
+  <h3>Vérification d'efficacité</h3><p class="pre">{{ nc.effectiveness_check or nc.effectiveness_justification or "—" }}</p>
+  {% if nc.cancel_reason %}<h3>Motif d'annulation</h3><p class="pre">{{ nc.cancel_reason }}</p>{% endif %}
+  <h3>Historique des statuts</h3>
+  <table><thead><tr><th>Date</th><th>De</th><th>Vers</th><th>Par</th><th>Commentaire</th></tr></thead>
+    <tbody>{% for h in history %}<tr><td>{{ h.changed_at | dt }}</td><td>{{ status_labels[h.from_status] if h.from_status else "—" }}</td>
+      <td>{{ status_labels[h.to_status] }}</td><td>{{ h.changed_by.full_name if h.changed_by else "—" }}</td><td>{{ h.comment or "" }}</td></tr>{% endfor %}</tbody></table>
+{% else %}
+  <table>
+    <thead><tr><th>Numéro</th><th>Titre</th><th>Détectée le</th><th>Origine</th><th>Gravité</th><th>Responsable</th><th>Statut</th></tr></thead>
+    <tbody>{% for n in items %}<tr><td>{{ n.number }}</td><td>{{ n.title }}</td><td>{{ n.detected_on | d }}</td><td>{{ n.origin_label }}</td>
+      <td>{{ n.severity_label }}</td><td>{{ n.responsible.full_name if n.responsible else "—" }}</td><td>{{ n.status_label }}</td></tr>
+    {% else %}<tr><td colspan="7" class="muted">Aucune non-conformité.</td></tr>{% endfor %}</tbody>
+  </table>
+{% endif %}
+{% endblock %}

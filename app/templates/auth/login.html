@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Connexion{% endblock %}
+{% block content %}
+<section class="card narrow">
+  <h1>Connexion</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.email) }}
+    {{ field(form.password) }}
+    {{ field(form.remember) }}
+    <button type="submit">Se connecter</button>
+  </form>
+  <p><a href="{{ url_for('auth.forgot_password') }}">Mot de passe oublié ?</a></p>
+  {% if signup_enabled %}<p><a href="{{ url_for('auth.signup') }}">Créer un laboratoire (essai gratuit)</a></p>{% endif %}
+  {% if show_demo %}
+    <div class="flash flash-info small">
+      <strong>Développement</strong> : après <code>flask seed-demo</code>, connectez-vous avec
+      <code>admin@demo.labqualite.fr</code> (ou qualite@, tech1@, lecteur@, consultant@) et le mot de passe
+      <code>Demo-Labqualite-2026</code>.
+    </div>
+  {% endif %}
+</section>
+{% endblock %}

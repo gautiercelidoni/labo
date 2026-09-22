@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, pagination %}
+{% block title %}Cahier de transmission{% endblock %}
+{% block content %}
+<div class="spread"><h1>Cahier de transmission</h1>
+  {% if can('transmission.create') %}<a class="button" href="{{ url_for('transmissions.new') }}">Nouvelle transmission</a>{% endif %}</div>
+<nav class="row small">
+  <a href="{{ url_for('transmissions.index', boite='recues') }}" {% if box == 'recues' %}aria-current="page"{% endif %}>Reçues</a>
+  <a href="{{ url_for('transmissions.index', boite='envoyees') }}" {% if box == 'envoyees' %}aria-current="page"{% endif %}>Envoyées</a>
+  {% if can('transmission.view_all') %}<a href="{{ url_for('transmissions.index', boite='toutes') }}" {% if box == 'toutes' %}aria-current="page"{% endif %}>Toutes</a>{% endif %}
+</nav>
+<form method="get" class="filters row">
+  <input type="hidden" name="boite" value="{{ box }}">
+  <div class="field"><label for="statut">Statut</label><select id="statut" name="statut"><option value="">Non archivées</option>
+    {% for k, v in status_labels.items() %}<option value="{{ k }}" {% if args.get('statut') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="priorite">Priorité</label><select id="priorite" name="priorite"><option value="">Toutes</option>
+    {% for k, v in priority_labels.items() %}<option value="{{ k }}" {% if args.get('priorite') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="categorie">Catégorie</label><select id="categorie" name="categorie"><option value="">Toutes</option>
+    {% for k, v in category_labels.items() %}<option value="{{ k }}" {% if args.get('categorie') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <label class="check"><input type="checkbox" name="non_lues" value="1" {% if args.get('non_lues') == '1' %}checked{% endif %}> Non lues</label>
+  <button type="submit">Filtrer</button>
+</form>
+<div class="table-wrap"><table>
+  <thead><tr><th>Priorité</th><th>Titre</th><th>Catégorie</th><th>Auteur</th><th>Date</th><th>Échéance</th><th>Statut</th></tr></thead>
+  <tbody>
+  {% for t in page.items %}
+    <tr><td>{{ status_badge(t.priority, t.priority_label) }}</td>
+      <td>{% if t.id not in read and box != 'envoyees' %}<strong>{% endif %}<a href="{{ url_for('transmissions.detail', transmission_id=t.id) }}">{{ t.title }}</a>{% if t.id not in read and box != 'envoyees' %}</strong>{% endif %}</td>
+      <td>{{ t.category_label }}</td><td>{{ t.author.full_name }}</td><td class="nowrap">{{ t.created_at | dt }}</td><td>{{ t.due_on | d }}</td>
+      <td>{{ status_badge(t.status, t.status_label) }}</td></tr>
+  {% else %}<tr><td colspan="7" class="muted">Aucune transmission.</td></tr>{% endfor %}
+  </tbody>
+</table></div>
+{{ pagination(page, 'transmissions.index') }}
+{% endblock %}

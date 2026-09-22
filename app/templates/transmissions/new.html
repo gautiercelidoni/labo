@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Nouvelle transmission{% endblock %}
+{% block content %}
+<section class="card medium">
+  <h1>Nouvelle transmission</h1>
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.title) }}{{ field(form.body) }}
+    <div class="row">{{ field(form.category) }}{{ field(form.priority) }}{{ field(form.due_on) }}</div>
+    <div class="row">{{ field(form.users, hint="Ctrl + clic pour plusieurs.") }}{{ field(form.teams) }}</div>
+    {{ field(form.files) }}
+    <button type="submit">Envoyer</button>
+  </form>
+</section>
+{% endblock %}

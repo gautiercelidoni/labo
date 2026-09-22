@@ -1,0 +1,6 @@
+<nav class="row small" aria-label="Métrologie">
+  <a href="{{ url_for('metrologie.index') }}">Parc d'équipements</a>
+  <a href="{{ url_for('metrologie.due') }}">Échéances</a>
+  <a href="{{ url_for('metrologie.calendar_view') }}">Calendrier</a>
+  {% if can('metrology.equipment.edit') %}<a href="{{ url_for('metrologie.new_equipment') }}">Nouvel équipement</a>{% endif %}
+</nav>

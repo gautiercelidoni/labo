@@ -1,0 +1,8 @@
+<nav class="row small" aria-label="Administration">
+  {% if can('users.manage') %}<a href="{{ url_for('admin.members') }}">Membres et invitations</a>
+  <a href="{{ url_for('admin.teams') }}">Équipes / postes</a>{% endif %}
+  {% if can('lab.settings.edit') %}<a href="{{ url_for('admin.settings') }}">Paramètres du laboratoire</a>
+  <a href="{{ url_for('admin.categories') }}">Catégories d'équipements</a>
+  <a href="{{ url_for('admin.export_data') }}">Export des données</a>{% endif %}
+  {% if can('billing.manage') %}<a href="{{ url_for('billing.index') }}">Abonnement</a>{% endif %}
+</nav>

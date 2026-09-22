@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Export des données{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<section class="card medium">
+  <h1>Export des données du laboratoire</h1>
+  <p>Archive ZIP contenant toutes les données du laboratoire au format CSV (UTF-8 avec BOM, séparateur
+     point-virgule, virgule décimale) : membres, équipements, métrologie, CIQ, actions correctives,
+     transmissions, non-conformités, liste des pièces jointes et journal d'audit. L'export est tracé.</p>
+  <form method="post">{{ form.hidden_tag() }}<button type="submit">Télécharger l'export</button></form>
+</section>
+{% endblock %}

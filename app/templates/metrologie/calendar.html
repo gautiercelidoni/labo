@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Calendrier métrologique{% endblock %}
+{% block content %}
+{% include "metrologie/_nav.html" %}
+{% set months = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"] %}
+<div class="spread">
+  <a href="{{ url_for('metrologie.calendar_view', mois=prev_month) }}">« Mois précédent</a>
+  <h1>{{ months[first.month - 1] | capitalize }} {{ first.year }}</h1>
+  <a href="{{ url_for('metrologie.calendar_view', mois=next_month) }}">Mois suivant »</a>
+</div>
+<div class="table-wrap"><table class="calendar">
+  <thead><tr>{% for d in ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"] %}<th>{{ d }}</th>{% endfor %}</tr></thead>
+  <tbody>
+  {% for week in weeks %}<tr>
+    {% for day in week %}
+      <td class="{% if day.month != first.month %}other{% endif %} {% if day == today %}today{% endif %}">
+        <strong>{{ day.day }}</strong>
+        {% for p in by_day.get(day, []) %}{% set st = due_state(p.next_due_on, today) %}
+          <a class="item badge badge-{{ {'overdue': 'danger', 'due_today': 'danger', 'due_7': 'warning', 'due_30': 'info'}.get(st, 'muted') }}"
+             href="{{ url_for('metrologie.equipment', equipment_id=p.equipment_id) }}">{{ p.equipment.internal_id }} · {{ p.event_type_label }}</a>
+        {% endfor %}
+      </td>
+    {% endfor %}
+  </tr>{% endfor %}
+  </tbody>
+</table></div>
+{% endblock %}

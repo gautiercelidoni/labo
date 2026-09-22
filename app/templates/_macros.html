@@ -1,0 +1,62 @@
+{% macro field(f, hint=None, cls='') -%}
+  <div class="field {{ cls }}{% if f.errors %} has-error{% endif %}">
+    {% if f.type == 'BooleanField' %}
+      <label class="check">{{ f(**kwargs) }} {{ f.label.text }}</label>
+    {% else %}
+      {{ f.label }}
+      {{ f(**kwargs) }}
+    {% endif %}
+    {% if hint %}<small class="hint">{{ hint }}</small>{% endif %}
+    {% for e in f.errors %}<small class="error">{{ e }}</small>{% endfor %}
+  </div>
+{%- endmacro %}
+
+{% macro csrf() -%}
+  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+{%- endmacro %}
+
+{% macro post_button(action, label, cls='button', confirm=None) -%}
+  <form method="post" action="{{ action }}" class="inline"{% if confirm %} data-confirm="{{ confirm }}"{% endif %}>
+    {{ csrf() }}
+    <button type="submit" class="{{ cls }}">{{ label }}</button>
+  </form>
+{%- endmacro %}
+
+{% macro status_badge(status, label) -%}
+  {% set map = {'accepted': 'ok', 'warning': 'warning', 'rejected': 'danger', 'justified': 'info', 'open': 'info',
+                'done': 'warning', 'validated': 'ok', 'in_service': 'ok', 'out_of_service': 'danger',
+                'maintenance': 'warning', 'suspended': 'danger', 'retired': 'muted', 'overdue': 'danger',
+                'due_today': 'danger', 'due_7': 'warning', 'due_30': 'info', 'none': 'muted',
+                'new': 'info', 'read': 'muted', 'in_progress': 'warning', 'archived': 'muted',
+                'urgent': 'danger', 'important': 'warning', 'normal': 'muted',
+                'draft': 'muted', 'analysis': 'warning', 'action': 'warning', 'verification': 'info',
+                'closed': 'ok', 'cancelled': 'muted', 'trialing': 'info', 'active': 'ok', 'past_due': 'danger',
+                'canceled': 'muted', 'minor': 'info', 'major': 'warning', 'critical': 'danger'} %}
+  <span class="badge badge-{{ map.get(status, 'muted') }}">{{ label }}</span>
+{%- endmacro %}
+
+{% macro pagination(page, endpoint) -%}
+  {% if page.pages > 1 %}
+    {% set args = request.args.to_dict() %}
+    <nav class="pagination" aria-label="Pagination">
+      {% if page.has_prev %}{% set _ = args.update({'page': page.page - 1}) %}<a href="{{ url_for(endpoint, **dict(request.view_args, **args)) }}">« Précédent</a>{% endif %}
+      <span>Page {{ page.page }} / {{ page.pages }} ({{ page.total }} éléments)</span>
+      {% if page.has_next %}{% set _ = args.update({'page': page.page + 1}) %}<a href="{{ url_for(endpoint, **dict(request.view_args, **args)) }}">Suivant »</a>{% endif %}
+    </nav>
+  {% elif page.total %}
+    <p class="muted">{{ page.total }} élément(s)</p>
+  {% endif %}
+{%- endmacro %}
+
+{% macro attachments_list(items) -%}
+  {% if items %}
+    <ul class="files">
+      {% for a in items %}
+        <li><a href="{{ url_for('files.download', attachment_id=a.id) }}">{{ a.original_name }}</a>
+          <span class="muted">({{ (a.size_bytes / 1024) | round(0) | int }} Ko, {{ a.created_at | dt }})</span></li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="muted">Aucune pièce jointe.</p>
+  {% endif %}
+{%- endmacro %}

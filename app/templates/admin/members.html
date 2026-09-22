@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, post_button %}
+{% block title %}Membres{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<h1>Membres du laboratoire</h1>
+<p class="muted">{{ active_count }} utilisateur(s) actif(s) sur {{ lab.max_active_users }} autorisés par l'abonnement.</p>
+<div class="table-wrap card">
+<table>
+  <thead><tr><th>Nom</th><th>Email</th><th>Rôle</th><th>Équipe</th><th>Statut</th><th></th></tr></thead>
+  <tbody>
+  {% for m in members %}
+    <tr>
+      <td>{{ m.user.full_name }}</td><td>{{ m.user.email }}</td><td>{{ m.role_label }}</td>
+      <td>{{ m.team.name if m.team else "—" }}</td>
+      <td>{% if m.is_active %}<span class="badge badge-ok">Actif</span>{% else %}<span class="badge badge-muted">Désactivé</span>{% endif %}</td>
+      <td class="nowrap">
+        <a href="{{ url_for('admin.edit_member', membership_id=m.id) }}">Modifier les droits</a>
+        {{ post_button(url_for('admin.toggle_member', membership_id=m.id), "Désactiver" if m.is_active else "Réactiver", "link",
+                       confirm="Confirmer le changement d'accès ?") }}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="cols-2">
+  <section class="card">
+    <h2>Inviter une personne</h2>
+    <form method="post" action="{{ url_for('admin.invite') }}" novalidate>
+      {{ form.hidden_tag() }}
+      {{ field(form.email) }}
+      {{ field(form.role) }}
+      {{ field(form.team_id) }}
+      <button type="submit">Envoyer l'invitation</button>
+    </form>
+  </section>
+  <section class="card">
+    <h2>Invitations en attente</h2>
+    {% if invitations %}
+      <ul>
+      {% for i in invitations %}
+        <li>{{ i.email }} — {{ i.role_label }}, expire le {{ i.expires_at | dt }}
+          {{ post_button(url_for('admin.revoke_invitation', invitation_id=i.id), "Révoquer", "link") }}</li>
+      {% endfor %}
+      </ul>
+    {% else %}<p class="muted">Aucune invitation en attente.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

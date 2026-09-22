@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+{% block content %}
+<div class="spread">
+  <h1>Tableau de bord — {{ active_lab.name }}</h1>
+  <span class="muted">{{ today | d }}</span>
+</div>
+<div class="grid">
+  {% for c in cards %}
+    <a class="card kpi kpi-{{ c.level }}" href="{{ c.link }}">
+      <span class="value">{{ c.value }}</span><br>
+      <span>{{ c.label }}</span>
+    </a>
+  {% endfor %}
+</div>
+<div class="cols-2">
+  <section class="card">
+    <h2>Accès rapides</h2>
+    <ul>
+      {% if can('ciq.result.create') %}<li><a href="{{ url_for('ciq.entry') }}">Saisir une série CIQ</a></li>{% endif %}
+      {% if can('metrology.view') %}<li><a href="{{ url_for('metrologie.due') }}">Échéances métrologiques</a> · <a href="{{ url_for('metrologie.calendar_view') }}">calendrier</a></li>{% endif %}
+      {% if can('transmission.create') %}<li><a href="{{ url_for('transmissions.new') }}">Nouvelle transmission</a></li>{% endif %}
+      {% if can('nc.create') %}<li><a href="{{ url_for('non_conformites.new') }}">Déclarer une non-conformité</a></li>{% endif %}
+      {% if can('billing.manage') %}<li><a href="{{ url_for('billing.index') }}">Abonnement</a></li>{% endif %}
+    </ul>
+  </section>
+  <section class="card">
+    <h2>Activité récente{% if not can('audit.view') %} (la vôtre){% endif %}</h2>
+    {% if activity %}
+      <table class="small">
+        <tbody>
+        {% for e in activity %}
+          <tr><td class="nowrap">{{ e.occurred_at | dt }}</td><td>{{ e.user.full_name if e.user else "Système" }}</td>
+              <td>{{ action_labels.get(e.action, e.action) }}</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    {% else %}<p class="muted">Aucune activité.</p>{% endif %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "pdf/base.html" %}
+{% block content %}
+<h2>Fiche</h2>
+<table>
+  <tr><th>Identifiant</th><td>{{ equipment.internal_id }}</td><th>Statut</th><td>{{ equipment.status_label }}</td></tr>
+  <tr><th>Fabricant / modèle</th><td>{{ equipment.manufacturer or "—" }} {{ equipment.model or "" }}</td><th>N° de série</th><td>{{ equipment.serial_number or "—" }}</td></tr>
+  <tr><th>Localisation</th><td>{{ equipment.location or "—" }}</td><th>Mise en service</th><td>{{ equipment.commissioned_on | d }}</td></tr>
+  <tr><th>Criticité</th><td>{{ equipment.criticality_label }}</td><th>Responsable</th><td>{{ equipment.responsible.full_name if equipment.responsible else "—" }}</td></tr>
+</table>
+<h2>Plans</h2>
+<table>
+  <thead><tr><th>Type</th><th>Périodicité</th><th>Prestataire</th><th>Dernière</th><th>Prochaine</th><th>Actif</th></tr></thead>
+  <tbody>{% for p in plans %}<tr><td>{{ p.event_type_label }}</td><td>{{ p.period_label }}</td><td>{{ p.provider or "—" }}</td>
+    <td>{{ p.last_done_on | d }}</td><td>{{ p.next_due_on | d }}</td><td>{{ "Oui" if p.is_active else "Non" }}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">Aucun plan.</td></tr>{% endfor %}</tbody>
+</table>
+<h2>Réalisations</h2>
+<table>
+  <thead><tr><th>Date</th><th>Type</th><th>Résultat</th><th>Prestataire</th><th>Par</th><th>Compte rendu</th></tr></thead>
+  <tbody>{% for e in events %}<tr><td>{{ e.performed_on | d }}</td><td>{{ e.event_type_label }}</td><td>{{ e.outcome_label }}</td>
+    <td>{{ e.provider or "—" }}</td><td>{{ e.performed_by.full_name if e.performed_by else "—" }}</td><td class="pre">{{ e.comment or "" }}</td></tr>
+  {% else %}<tr><td colspan="6" class="muted">Aucune réalisation.</td></tr>{% endfor %}</tbody>
+</table>
+<h2>Synthèse CIQ (12 derniers mois)</h2>
+<table>
+  <thead><tr><th>Paramètre</th><th class="num">Acceptés</th><th class="num">Alertes</th><th class="num">Rejets</th></tr></thead>
+  <tbody>{% for name, c in ciq_summary.items() %}<tr><td>{{ name }}</td><td class="num">{{ c.accepted }}</td><td class="num">{{ c.warning }}</td><td class="num">{{ c.rejected }}</td></tr>
+  {% else %}<tr><td colspan="4" class="muted">Aucun résultat CIQ.</td></tr>{% endfor %}</tbody>
+</table>
+{% endblock %}

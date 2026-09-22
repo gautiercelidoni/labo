@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <meta name="htmx-config" content='{"includeIndicatorStyles": false, "allowEval": false, "allowScriptTags": false}'>
+  <title>{% block title %}LabQualité{% endblock %} · LabQualité</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+  <script src="{{ url_for('static', filename='vendor/htmx.min.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/app.js') }}" defer></script>
+  {% block head %}{% endblock %}
+</head>
+<body>
+<a class="skip-link" href="#contenu">Aller au contenu</a>
+<header class="topbar">
+  <div class="topbar-inner">
+    <a class="brand" href="{{ url_for('dashboard.root') }}">LabQualité</a>
+    {% if current_user.is_authenticated and active_lab %}
+      <nav class="mainnav" aria-label="Navigation principale">
+        {% if can('dashboard.view') %}<a href="{{ url_for('dashboard.index') }}" {% if request.blueprint == 'dashboard' %}aria-current="page"{% endif %}>Tableau de bord</a>{% endif %}
+        {% if can('ciq.view') %}<a href="{{ url_for('ciq.index') }}" {% if request.blueprint == 'ciq' %}aria-current="page"{% endif %}>CIQ</a>{% endif %}
+        {% if can('metrology.view') %}<a href="{{ url_for('metrologie.index') }}" {% if request.blueprint == 'metrologie' %}aria-current="page"{% endif %}>Métrologie</a>{% endif %}
+        {% if can('corrective_action.view') %}<a href="{{ url_for('actions.index') }}" {% if request.blueprint == 'actions' %}aria-current="page"{% endif %}>Actions</a>{% endif %}
+        {% if can('transmission.view') %}<a href="{{ url_for('transmissions.index') }}" {% if request.blueprint == 'transmissions' %}aria-current="page"{% endif %}>Transmissions</a>{% endif %}
+        {% if can('nc.view') %}<a href="{{ url_for('non_conformites.index') }}" {% if request.blueprint == 'non_conformites' %}aria-current="page"{% endif %}>Non-conformités</a>{% endif %}
+        {% if can('audit.view') %}<a href="{{ url_for('audit.index') }}" {% if request.blueprint == 'audit' %}aria-current="page"{% endif %}>Audit</a>{% endif %}
+        {% if can('users.manage') or can('lab.settings.edit') %}<a href="{{ url_for('admin.members') }}" {% if request.blueprint == 'admin' %}aria-current="page"{% endif %}>Administration</a>{% endif %}
+      </nav>
+    {% endif %}
+    {% if current_user.is_authenticated %}
+      <div class="usermenu">
+        {% if active_lab %}
+          <a class="notif" href="{{ url_for('notifications.index') }}" title="Notifications">
+            Alertes{% if unread_notifications %} <span class="badge badge-danger">{{ unread_notifications }}</span>{% endif %}
+          </a>
+          <a href="{{ url_for('auth.select_lab') }}" class="lab-name" title="Changer de laboratoire">{{ active_lab.name }} ({{ membership.role_label }})</a>
+        {% endif %}
+        <a href="{{ url_for('auth.change_password') }}">{{ current_user.full_name }}</a>
+        <form method="post" action="{{ url_for('auth.logout') }}" class="inline">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <button type="submit" class="link">Déconnexion</button>
+        </form>
+      </div>
+    {% endif %}
+  </div>
+</header>
+{% if active_lab and not write_allowed %}
+  <div class="banner banner-warning" role="status">
+    Lecture seule : {{ access_reason or "abonnement inactif" }}.
+    {% if can('billing.manage') %}<a href="{{ url_for('billing.index') }}">Gérer l'abonnement</a>{% endif %}
+  </div>
+{% endif %}
+<main id="contenu" class="container">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="flash flash-{{ category }}" role="alert">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+  {% block content %}{% endblock %}
+</main>
+<footer class="footer">
+  <p>LabQualité aide à structurer votre système qualité ; il ne garantit pas à lui seul la conformité ISO/IEC 17025 ou l'accréditation COFRAC.</p>
+</footer>
+{% block scripts %}{% endblock %}
+</body>
+</html>

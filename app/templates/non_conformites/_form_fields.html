@@ -1,0 +1,5 @@
+{% from "_macros.html" import field %}
+{{ field(form.title) }}{{ field(form.description) }}
+<div class="row">{{ field(form.detected_on) }}{{ field(form.origin) }}{{ field(form.severity) }}{{ field(form.equipment_id) }}</div>
+{{ field(form.impact) }}{{ field(form.immediate_action) }}
+<div class="row">{{ field(form.responsible_id) }}{{ field(form.target_date) }}</div>

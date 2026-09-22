@@ -1,0 +1,6 @@
+<nav class="row small" aria-label="CIQ">
+  <a href="{{ url_for('ciq.index') }}">Paramètres</a>
+  {% if can('ciq.result.create') %}<a href="{{ url_for('ciq.entry') }}">Saisie</a>{% endif %}
+  <a href="{{ url_for('ciq.history') }}">Historique</a>
+  {% if can('ciq.config.edit') %}<a href="{{ url_for('ciq.new_parameter') }}">Nouveau paramètre</a>{% endif %}
+</nav>

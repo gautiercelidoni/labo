@@ -1,0 +1,13 @@
+{% extends "pdf/base.html" %}
+{% block content %}
+<table>
+  <thead><tr><th>Équipement</th><th>Type</th><th>Périodicité</th><th>Prestataire</th><th>Responsable</th><th>Dernière</th><th>Échéance</th><th>État</th></tr></thead>
+  <tbody>
+  {% for p in plans %}{% set st = due_state(p.next_due_on, today) %}
+    <tr><td>{{ p.equipment.name }} ({{ p.equipment.internal_id }})</td><td>{{ p.event_type_label }}</td><td>{{ p.period_label }}</td>
+      <td>{{ p.provider or "—" }}</td><td>{{ p.responsible.full_name if p.responsible else "—" }}</td><td>{{ p.last_done_on | d }}</td>
+      <td>{{ p.next_due_on | d }}</td><td class="{{ 'rejected' if st in ('overdue', 'due_today') else ('warning' if st == 'due_7' else '') }}">{{ due_labels[st] }}</td></tr>
+  {% else %}<tr><td colspan="8" class="muted">Aucune échéance.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Nouveau paramètre{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<section class="card medium">
+  <h1>Nouveau paramètre CIQ</h1>
+  {% if not form.equipment_id.choices %}<p class="flash flash-warning">Créez d'abord un équipement dans le module Métrologie.</p>{% endif %}
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.equipment_id) }}
+    <div class="row">{{ field(form.name) }}{{ field(form.unit) }}{{ field(form.decimals) }}</div>
+    {{ field(form.mode, hint="Westgard : cible et écart-type fournis. Shewhart : limites calculées sur une période de référence.") }}
+    {{ field(form.is_active) }}
+    <button type="submit">Créer</button>
+  </form>
+</section>
+{% endblock %}

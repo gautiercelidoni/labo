@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field, status_badge, attachments_list %}
+{% block title %}{{ equipment.name }}{% endblock %}
+{% block content %}
+{% include "metrologie/_nav.html" %}
+<div class="spread">
+  <h1>{{ equipment.name }} <span class="muted">({{ equipment.internal_id }})</span></h1>
+  <div class="row">
+    {{ status_badge(equipment.status, equipment.status_label) }}
+    {% if can('export.run') %}<a class="button button-secondary" href="{{ url_for('metrologie.equipment_pdf', equipment_id=equipment.id) }}">Historique PDF</a>{% endif %}
+    {% if can('metrology.equipment.edit') and not equipment.archived_at %}<a class="button" href="{{ url_for('metrologie.edit_equipment', equipment_id=equipment.id) }}">Modifier</a>{% endif %}
+  </div>
+</div>
+{% if suggest_suspension and equipment.status != 'suspended' %}
+  <div class="flash flash-warning">Le dernier étalonnage est non conforme. Passer l'équipement en « suspendu » ?
+    <form method="post" action="{{ url_for('metrologie.suspend', equipment_id=equipment.id) }}" class="inline">{{ suspend_form.hidden_tag() }}
+      <button type="submit" class="danger">Suspendre l'équipement</button></form></div>
+{% endif %}
+<div class="cols-2">
+  <section class="card">
+    <h2>Fiche</h2>
+    <dl class="meta">
+      <dt>Catégorie</dt><dd>{{ equipment.category.name if equipment.category else "—" }}</dd>
+      <dt>Fabricant / modèle</dt><dd>{{ equipment.manufacturer or "—" }} {{ equipment.model or "" }}</dd>
+      <dt>N° de série</dt><dd>{{ equipment.serial_number or "—" }}</dd>
+      <dt>Localisation</dt><dd>{{ equipment.location or "—" }}</dd>
+      <dt>Mise en service</dt><dd>{{ equipment.commissioned_on | d }}</dd>
+      <dt>Criticité</dt><dd>{{ equipment.criticality_label }}</dd>
+      <dt>Responsable</dt><dd>{{ equipment.responsible.full_name if equipment.responsible else "—" }}</dd>
+      {% if equipment.archived_at %}<dt>Réformé le</dt><dd>{{ equipment.archived_at | dt }}</dd>{% endif %}
+    </dl>
+    {% if equipment.notes %}<p class="pre">{{ equipment.notes }}</p>{% endif %}
+    {% if parameters %}<p>Paramètres CIQ : {% for p in parameters %}<a href="{{ url_for('ciq.parameter', parameter_id=p.id) }}">{{ p.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Pièces jointes</h2>
+    {{ attachments_list(attachments) }}
+    {% if can('files.upload') %}
+      <form method="post" action="{{ url_for('metrologie.upload', equipment_id=equipment.id) }}" enctype="multipart/form-data" class="row" novalidate>
+        {{ upload_form.hidden_tag() }}{{ field(upload_form.file) }}<button type="submit">Ajouter</button></form>
+    {% endif %}
+  </section>
+</div>
+<section class="card">
+  <div class="spread"><h2>Plans de métrologie et maintenance</h2>
+    {% if can('metrology.plan.edit') and not equipment.archived_at %}<a href="{{ url_for('metrologie.new_plan', equipment_id=equipment.id) }}">Ajouter un plan</a>{% endif %}</div>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Type</th><th>Périodicité</th><th>Prestataire</th><th>Responsable</th><th>Dernière</th><th>Prochaine</th><th>État</th><th></th></tr></thead>
+    <tbody>
+    {% for p in plans %}{% set st = due_state(p.next_due_on, today) %}
+      <tr {% if not p.is_active %}class="voided"{% endif %}><td>{{ p.event_type_label }}</td><td>{{ p.period_label }}</td><td>{{ p.provider or "—" }}</td>
+        <td>{{ p.responsible.full_name if p.responsible else "—" }}</td><td>{{ p.last_done_on | d }}</td><td>{{ p.next_due_on | d }}</td>
+        <td>{% if p.is_active %}{{ status_badge(st, due_labels[st]) }}{% else %}inactif{% endif %}</td>
+        <td class="nowrap">{% if can('metrology.event.create') and p.is_active %}<a href="{{ url_for('metrologie.equipment', equipment_id=equipment.id, plan=p.id) }}#realisation">Enregistrer une réalisation</a>{% endif %}
+          {% if can('metrology.plan.edit') %} · <a href="{{ url_for('metrologie.edit_plan', plan_id=p.id) }}">Modifier</a>{% endif %}</td></tr>
+    {% else %}<tr><td colspan="8" class="muted">Aucun plan.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% if can('metrology.event.create') and not equipment.archived_at %}
+<section class="card" id="realisation">
+  <h2>Enregistrer une réalisation</h2>
+  <form method="post" action="{{ url_for('metrologie.record_event', equipment_id=equipment.id) }}" enctype="multipart/form-data" novalidate>
+    {{ event_form.hidden_tag() }}
+    <div class="row">{{ field(event_form.plan_id) }}{{ field(event_form.event_type) }}{{ field(event_form.performed_on) }}{{ field(event_form.outcome) }}</div>
+    <div class="row">{{ field(event_form.provider) }}{{ field(event_form.attachment) }}</div>
+    {{ field(event_form.comment) }}
+    <button type="submit">Enregistrer</button>
+  </form>
+</section>
+{% endif %}
+<section class="card">
+  <h2>Historique des réalisations</h2>
+  <div class="table-wrap"><table>
+    <thead><tr><th>Date</th><th>Type</th><th>Résultat</th><th>Prestataire</th><th>Par</th><th>Compte rendu</th><th>Documents</th></tr></thead>
+    <tbody>
+    {% for e in events %}
+      <tr><td>{{ e.performed_on | d }}</td><td>{{ e.event_type_label }}{% if not e.plan_id %} <span class="muted">(non planifié)</span>{% endif %}</td>
+        <td>{% if e.outcome %}{{ status_badge('accepted' if e.outcome == 'conform' else 'rejected', e.outcome_label) }}{% else %}—{% endif %}</td>
+        <td>{{ e.provider or "—" }}</td><td>{{ e.performed_by.full_name if e.performed_by else "—" }}</td>
+        <td class="small pre">{{ e.comment or "" }}</td>
+        <td>{% for a in event_files.get(e.id, []) %}<a href="{{ url_for('files.download', attachment_id=a.id) }}">{{ a.original_name }}</a><br>{% endfor %}</td></tr>
+    {% else %}<tr><td colspan="7" class="muted">Aucune réalisation.</td></tr>{% endfor %}
+    </tbody>
+  </table></div>
+</section>
+{% if can('metrology.equipment.edit') and not equipment.archived_at %}
+<div class="cols-2">
+  <section class="card"><h2>Changer le statut</h2>
+    <form method="post" action="{{ url_for('metrologie.change_status', equipment_id=equipment.id) }}" novalidate>
+      {{ status_form.hidden_tag() }}{{ field(status_form.status) }}{{ field(status_form.reason) }}<button type="submit">Modifier le statut</button></form></section>
+  <section class="card"><h2>Réformer / archiver</h2>
+    <p class="small muted">L'équipement et tout son historique sont conservés ; ses plans sont désactivés.</p>
+    <form method="post" action="{{ url_for('metrologie.archive', equipment_id=equipment.id) }}" data-confirm="Réformer cet équipement ?" novalidate>
+      {{ archive_form.hidden_tag() }}{{ field(archive_form.reason) }}<button type="submit" class="danger">Réformer</button></form></section>
+</div>
+{% endif %}
+{% endblock %}

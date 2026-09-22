@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}Abonnement{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<section class="card medium">
+  <h1>Abonnement du laboratoire</h1>
+  {% if subscription %}
+    <dl class="meta">
+      <dt>Statut</dt><dd>{{ status_badge(subscription.status, subscription.status_label) }}</dd>
+      <dt>Offre</dt><dd>{{ subscription.plan_label }}</dd>
+      {% if subscription.status == 'trialing' %}<dt>Fin de l'essai</dt><dd>{{ subscription.trial_ends_at | dt }}</dd>{% endif %}
+      {% if subscription.current_period_end %}<dt>Période en cours jusqu'au</dt><dd>{{ subscription.current_period_end | dt }}</dd>{% endif %}
+      {% if subscription.grace_until %}<dt>Période de grâce jusqu'au</dt><dd>{{ subscription.grace_until | dt }}</dd>{% endif %}
+      {% if subscription.cancel_at_period_end %}<dt>Résiliation</dt><dd>à la fin de la période en cours</dd>{% endif %}
+      <dt>Utilisateurs actifs</dt><dd>{{ active_members }} / {{ active_lab.max_active_users }}</dd>
+    </dl>
+  {% else %}<p>Aucun abonnement.</p>{% endif %}
+  <p class="small muted">Le statut est mis à jour uniquement à réception des notifications de Stripe. Après expiration
+    (essai terminé, résiliation, paiement en retard au-delà de {{ grace_days }} jours), le laboratoire passe en lecture
+    seule : aucune donnée n'est supprimée.</p>
+</section>
+<section class="card medium">
+  <h2>Souscrire ou changer d'offre</h2>
+  {% if stripe_ready %}
+    <div class="row">
+      <form method="post" action="{{ url_for('billing.checkout') }}">{{ monthly_form.hidden_tag() }}{{ monthly_form.plan() }}<button type="submit">Forfait mensuel</button></form>
+      <form method="post" action="{{ url_for('billing.checkout') }}">{{ yearly_form.hidden_tag() }}{{ yearly_form.plan() }}<button type="submit">Forfait annuel</button></form>
+      {% if subscription and subscription.stripe_customer_id %}
+        <form method="post" action="{{ url_for('billing.portal') }}">{{ portal_form.hidden_tag() }}<button type="submit" class="secondary">Factures et moyen de paiement</button></form>
+      {% endif %}
+    </div>
+    <p class="small muted">Paiement sécurisé par Stripe : aucune donnée bancaire n'est stockée par LabQualité.
+      {% if tax_enabled %}TVA calculée automatiquement par Stripe Tax.{% elif vat_mention %}Mention portée sur les factures : « {{ vat_mention }} ».{% endif %}</p>
+  {% else %}
+    <p class="flash flash-warning">Le paiement en ligne n'est pas encore configuré sur cette instance (clés et prix Stripe).</p>
+  {% endif %}
+</section>
+{% endblock %}

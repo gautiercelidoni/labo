@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge %}
+{% block title %}Contrôles qualité internes{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<div class="spread"><h1>Contrôles qualité internes</h1>
+  {% if pending %}<a class="badge badge-danger" href="{{ url_for('ciq.history', statut='rejected') }}">{{ pending }} série(s) rejetée(s) à traiter</a>{% endif %}
+</div>
+{% if parameters %}
+<div class="table-wrap card">
+<table>
+  <thead><tr><th>Équipement</th><th>Paramètre</th><th>Mode</th><th>Dernière série</th><th>Statut</th><th></th></tr></thead>
+  <tbody>
+  {% for p in parameters %}
+    {% set run = last_runs.get(p.id) %}
+    <tr>
+      <td>{{ p.equipment.name }}</td>
+      <td><a href="{{ url_for('ciq.parameter', parameter_id=p.id) }}">{{ p.name }}</a>{% if p.unit %} <span class="muted">({{ p.unit }})</span>{% endif %}
+        {% if not p.is_active %} <span class="badge badge-muted">inactif</span>{% endif %}</td>
+      <td>{{ mode_labels[p.rule_config.mode] if p.rule_config else "—" }}</td>
+      <td>{% if run %}<a href="{{ url_for('ciq.run', run_id=run.id) }}">{{ run.run_at | dt }}</a>{% else %}—{% endif %}</td>
+      <td>{% if run %}{{ status_badge(run.status, run.status_label) }}{% endif %}</td>
+      <td class="nowrap">
+        <a href="{{ url_for('ciq.chart', parameter_id=p.id) }}">Graphique</a>
+        {% if can('ciq.result.create') and p.is_active %} · <a href="{{ url_for('ciq.entry', parametre=p.id) }}">Saisir</a>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+  <p class="card">Aucun paramètre configuré.
+  {% if can('ciq.config.edit') %}<a href="{{ url_for('ciq.new_parameter') }}">Créer le premier paramètre</a> (un équipement doit exister dans la métrologie).{% endif %}</p>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}{{ parameter.name }}{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<div class="spread">
+  <h1>{{ parameter.name }} <span class="muted">— {{ parameter.equipment.name }}</span></h1>
+  <div class="row">
+    <a class="button button-secondary" href="{{ url_for('ciq.chart', parameter_id=parameter.id) }}">Graphiques</a>
+    {% if can('ciq.result.create') and parameter.is_active %}<a class="button" href="{{ url_for('ciq.entry', parametre=parameter.id) }}">Saisir une série</a>{% endif %}
+  </div>
+</div>
+<p>Mode par défaut : <strong>{{ mode_labels[config.mode] }}</strong> · Unité : {{ parameter.unit or "—" }} ·
+   Commentaire obligatoire en cas de : {{ config.comment_required_on | map('replace', 'warning', 'alerte') | map('replace', 'reject', 'rejet') | join(', ') or 'jamais' }}
+   {% if config.chain_lots %}· Séquences enchaînées entre lots{% endif %}</p>
+
+<section class="card">
+  <h2>Niveaux de contrôle, lots et limites</h2>
+  {% if levels %}
+  <table>
+    <thead><tr><th>Niveau</th><th>Mode</th><th>Lots</th><th>Limites actives</th></tr></thead>
+    <tbody>
+    {% for lvl in levels %}
+      <tr>
+        <td><a href="{{ url_for('ciq.level', level_id=lvl.id) }}">{{ lvl.label }}</a>{% if not lvl.is_active %} <span class="badge badge-muted">inactif</span>{% endif %}</td>
+        <td>{{ mode_labels[lvl.mode or config.mode] }}</td>
+        <td>{% for lot in lots[lvl.id] %}<a href="{{ url_for('ciq.lot', lot_id=lot.id) }}">{{ lot.lot_number }}</a>{% if not loop.last %}, {% endif %}{% else %}<span class="muted">aucun</span>{% endfor %}</td>
+        <td class="small">{% for lot in lots[lvl.id] %}{% set lim = active_limits.get(lot.id) %}
+          {% if lim %}{{ lot.lot_number }} : cible {{ lim.mean | num(parameter.decimals + 1) }}, s {{ lim.sd | num(parameter.decimals + 1) }}<br>{% else %}{{ lot.lot_number }} : <span class="error">aucune limite</span><br>{% endif %}
+        {% endfor %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="muted">Aucun niveau.</p>{% endif %}
+  {% if can('ciq.config.edit') %}
+    <details><summary>Ajouter un niveau</summary>
+      <form method="post" action="{{ url_for('ciq.add_level', parameter_id=parameter.id) }}" class="row" novalidate>
+        {{ level_form.hidden_tag() }}{{ field(level_form.label) }}{{ field(level_form.sort_order) }}{{ field(level_form.mode) }}{{ field(level_form.is_active) }}
+        <button type="submit">Ajouter</button>
+      </form>
+    </details>
+  {% endif %}
+</section>
+
+{% if can('ciq.config.edit') %}
+<div class="cols-2">
+<section class="card">
+  <h2>Règles d'évaluation</h2>
+  <form method="post" action="{{ url_for('ciq.edit_rules', parameter_id=parameter.id) }}" novalidate>
+    {{ rules_form.hidden_tag() }}
+    {{ field(rules_form.mode) }}
+    <h3>Westgard</h3>
+    {% for r in westgard_rules %}{{ field(rules_form['rule_' ~ r]) }}{% endfor %}
+    <h3>Carte de contrôle Shewhart</h3>
+    {% for r in shewhart_rules %}{{ field(rules_form['rule_' ~ r]) }}{% endfor %}
+    {{ field(rules_form.comment_required_on) }}
+    {{ field(rules_form.min_reference_points) }}
+    {{ field(rules_form.chain_lots) }}
+    <button type="submit">Enregistrer les règles</button>
+  </form>
+</section>
+<section class="card">
+  <h2>Paramètre</h2>
+  <form method="post" action="{{ url_for('ciq.edit_parameter', parameter_id=parameter.id) }}" novalidate>
+    {{ form.hidden_tag() }}
+    {{ field(form.equipment_id) }}{{ field(form.name) }}{{ field(form.unit) }}{{ field(form.decimals) }}{{ field(form.is_active) }}
+    <button type="submit">Enregistrer</button>
+  </form>
+  <h2>Rapport mensuel PDF</h2>
+  <form method="get" action="{{ url_for('ciq.monthly_report', parameter_id=parameter.id) }}" class="row">
+    <div class="field"><label for="mois">Mois</label><input type="month" id="mois" name="mois"></div>
+    <button type="submit">Générer</button>
+  </form>
+</section>
+</div>
+{% else %}
+<section class="card">
+  <h2>Rapport mensuel PDF</h2>
+  <form method="get" action="{{ url_for('ciq.monthly_report', parameter_id=parameter.id) }}" class="row">
+    <div class="field"><label for="mois">Mois</label><input type="month" id="mois" name="mois"></div>
+    <button type="submit">Générer</button>
+  </form>
+</section>
+{% endif %}
+{% endblock %}

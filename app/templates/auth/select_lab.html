@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Choisir un laboratoire{% endblock %}
+{% block content %}
+<section class="card medium">
+  <h1>Choisir le laboratoire actif</h1>
+  {% if memberships %}
+    <table>
+      <thead><tr><th>Laboratoire</th><th>Rôle</th><th></th></tr></thead>
+      <tbody>
+      {% for m in memberships %}
+        <tr>
+          <td>{{ m.laboratory.name }}</td>
+          <td>{{ role_labels[m.role] }}</td>
+          <td>
+            <form method="post" action="{{ url_for('auth.activate_lab', lab_id=m.tenant_id) }}" class="inline">
+              {{ form.hidden_tag() }}
+              <button type="submit" {% if active_lab and active_lab.id == m.tenant_id %}class="secondary"{% endif %}>
+                {% if active_lab and active_lab.id == m.tenant_id %}Laboratoire actif{% else %}Activer{% endif %}
+              </button>
+            </form>
+          </td>
+        </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>Vous n'êtes membre d'aucun laboratoire actif. Demandez une invitation à l'administrateur de votre laboratoire.</p>
+  {% endif %}
+</section>
+{% endblock %}

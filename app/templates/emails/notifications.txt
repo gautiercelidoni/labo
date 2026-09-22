@@ -1,0 +1,10 @@
+Bonjour {{ user.full_name }},
+
+Alertes qualité pour « {{ lab.name }} » :
+{% for n in items %}
+- {{ n.message }}
+{%- endfor %}
+
+Consulter vos alertes : {{ link }}
+
+— LabQualité

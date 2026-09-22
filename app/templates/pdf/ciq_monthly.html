@@ -1,0 +1,36 @@
+{% extends "pdf/base.html" %}
+{% block content %}
+<p>Paramètre : <strong>{{ parameter.name }}</strong> ({{ parameter.unit or "sans unité" }}) · Équipement : {{ equipment.name if equipment else "—" }} ({{ equipment.internal_id if equipment else "" }})</p>
+{% for s in sections %}
+  <h2>Niveau {{ s.level.label }} — {{ "carte de contrôle Shewhart" if s.mode == "shewhart" else "Westgard" }}</h2>
+  {% if s.stats %}
+    <p>n = {{ s.stats.n }} · moyenne observée {{ s.stats.mean | num(parameter.decimals + 1) }}
+      {% if s.stats.sd is not none %}· écart-type {{ s.stats.sd | num(parameter.decimals + 1) }} · CV {{ s.stats.cv | num(2) }} %{% endif %}
+      · alertes : {{ s.stats.warnings }} · rejets : {{ s.stats.rejects }}</p>
+  {% endif %}
+  <div class="keep">{{ s.chart }}</div>
+  <p class="muted">Graphique en z-score (chaque point évalué avec son propre jeu de limites) ; pointillés verts : changement de lot ou de limites.</p>
+  <table>
+    <thead><tr><th>Date</th><th>Lot</th><th class="num">Valeur</th><th class="num">Cible</th><th class="num">s</th><th class="num">z</th><th>Statut</th><th>Règles</th><th>Commentaire</th></tr></thead>
+    <tbody>
+    {% for r, lot_number, lim in s.rows %}
+      <tr class="{% if r.voided_at %}voided{% endif %}">
+        <td>{{ r.run_at | dt }}</td><td>{{ lot_number }}</td><td class="num">{{ r.value | num(parameter.decimals) }}</td>
+        <td class="num">{{ lim.mean | num(parameter.decimals) }}</td><td class="num">{{ lim.sd | num(parameter.decimals + 1) }}</td>
+        <td class="num">{{ r.z_score | num(2) }}</td>
+        <td class="{{ r.status }}">{{ r.status_label }}{% if r.voided_at %} (annulé){% endif %}</td>
+        <td>{{ r.rules_triggered | map(attribute='rule') | join(', ') }}</td>
+        <td>{{ r.comment or "" }}{% if r.voided_at %} — annulation : {{ r.void_reason }}{% endif %}</td></tr>
+    {% else %}<tr><td colspan="9" class="muted">Aucun résultat.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+{% endfor %}
+<h2>Séries rejetées et traitement</h2>
+<table>
+  <thead><tr><th>Date</th><th>Statut</th><th>Justification</th></tr></thead>
+  <tbody>
+  {% for run in runs %}<tr><td>{{ run.run_at | dt }}</td><td>{{ run.status_label }}</td><td>{{ run.justification or "Non traitée" }}</td></tr>
+  {% else %}<tr><td colspan="3" class="muted">Aucune série rejetée sur la période.</td></tr>{% endfor %}
+  </tbody>
+</table>
+{% endblock %}

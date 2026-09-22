@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Équipes{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<h1>Équipes et postes</h1>
+<div class="cols-2">
+  <section class="card">
+    {% if teams %}
+      <ul>{% for t in teams %}<li><a href="{{ url_for('admin.edit_team', team_id=t.id) }}">{{ t.name }}</a>
+        {% if t.description %}<span class="muted"> — {{ t.description }}</span>{% endif %}</li>{% endfor %}</ul>
+    {% else %}<p class="muted">Aucune équipe.</p>{% endif %}
+  </section>
+  <section class="card">
+    <h2>Nouvelle équipe / poste</h2>
+    <form method="post" novalidate>{{ form.hidden_tag() }}{{ field(form.name) }}{{ field(form.description) }}
+      <button type="submit">Créer</button></form>
+  </section>
+</div>
+{% endblock %}

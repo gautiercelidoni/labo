@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Équipe {{ team.name }}{% endblock %}
+{% block content %}
+{% include "admin/_nav.html" %}
+<section class="card narrow">
+  <h1>{{ team.name }}</h1>
+  <form method="post" novalidate>{{ form.hidden_tag() }}{{ field(form.name) }}{{ field(form.description) }}
+    <button type="submit">Enregistrer</button> <a href="{{ url_for('admin.teams') }}">Retour</a></form>
+</section>
+{% endblock %}

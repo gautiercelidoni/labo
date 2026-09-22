@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>{{ title }}</title>
+<style>
+  @page { size: A4; margin: 22mm 14mm 18mm 14mm;
+    @top-left { content: "{{ lab.name }}"; font-size: 8pt; color: #555; }
+    @top-right { content: "Rapport {{ report_id }}"; font-size: 8pt; color: #555; }
+    @bottom-left { content: "Généré le {{ generated_at.strftime('%d/%m/%Y %H:%M') }} UTC par {{ author }}"; font-size: 8pt; color: #555; }
+    @bottom-right { content: "Page " counter(page) " / " counter(pages); font-size: 8pt; color: #555; } }
+  body { font-family: "DejaVu Sans", Arial, sans-serif; font-size: 9pt; color: #111; }
+  h1 { font-size: 15pt; margin: 0 0 4pt; }
+  h2 { font-size: 11.5pt; margin: 12pt 0 4pt; border-bottom: 1px solid #999; }
+  h3 { font-size: 10pt; margin: 8pt 0 3pt; }
+  table { width: 100%; border-collapse: collapse; margin: 4pt 0; }
+  th, td { border: 0.5pt solid #aaa; padding: 2pt 4pt; text-align: left; vertical-align: top; }
+  th { background: #eee; }
+  td.num { text-align: right; }
+  .header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #1f5fa8; padding-bottom: 6pt; margin-bottom: 8pt; }
+  .meta { font-size: 8.5pt; color: #333; }
+  .muted { color: #666; }
+  .rejected { color: #b3261e; font-weight: bold; }
+  .warning { color: #9a6200; font-weight: bold; }
+  .voided { color: #888; text-decoration: line-through; }
+  .pre { white-space: pre-wrap; }
+  .disclaimer { margin-top: 14pt; font-size: 7.5pt; color: #666; }
+  .keep { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+<div class="header">
+  <div>
+    <h1>{{ title }}</h1>
+    <div class="meta">{{ lab.name }}{% if lab.legal_info.address %} — {{ lab.legal_info.address }}{% endif %}{% if lab.legal_info.accreditation %} — Accréditation {{ lab.legal_info.accreditation }}{% endif %}</div>
+    <div class="meta">Période : {{ period }} · Généré le {{ generated_at.strftime('%d/%m/%Y %H:%M') }} UTC par {{ author }} · Identifiant : {{ report_id }}</div>
+    {% if filters %}<div class="meta">Filtres : {% for k, v in filters.items() %}{{ k }} = {{ v }}{% if not loop.last %} ; {% endif %}{% endfor %}</div>{% endif %}
+  </div>
+  {% if logo_uri %}<img src="{{ logo_uri }}" alt="" style="max-height:50pt;max-width:120pt">{% endif %}
+</div>
+{% block content %}{% endblock %}
+<p class="disclaimer">Document généré par LabQualité. L'outil aide à structurer le système qualité ; il ne garantit pas à lui seul la conformité ISO/IEC 17025 ou l'accréditation.</p>
+</body>
+</html>

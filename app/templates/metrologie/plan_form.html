@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+{% from "_macros.html" import field %}
+{% block title %}Plan — {{ equipment.name }}{% endblock %}
+{% block content %}
+{% include "metrologie/_nav.html" %}
+<section class="card medium">
+  <h1>{{ "Modifier le plan" if plan else "Nouveau plan" }} — {{ equipment.name }}</h1>
+  <form method="post" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="row">{{ field(form.event_type) }}{{ field(form.period_value) }}{{ field(form.period_unit) }}</div>
+    <div class="row">{{ field(form.provider) }}{{ field(form.responsible_id) }}</div>
+    <div class="row">{{ field(form.last_done_on) }}{{ field(form.next_due_on) }}</div>
+    <p class="small muted">Si la prochaine échéance est vide, elle est calculée depuis la dernière réalisation effective.</p>
+    {{ field(form.comment) }}{{ field(form.is_active) }}
+    <button type="submit">Enregistrer</button>
+    <a href="{{ url_for('metrologie.equipment', equipment_id=equipment.id) }}">Annuler</a>
+  </form>
+</section>
+{% endblock %}

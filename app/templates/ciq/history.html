@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% from "_macros.html" import status_badge, pagination %}
+{% block title %}Historique CIQ{% endblock %}
+{% block content %}
+{% include "ciq/_nav.html" %}
+<h1>Historique des résultats CIQ</h1>
+<form method="get" class="filters row">
+  <div class="field"><label for="du">Du</label><input type="date" id="du" name="du" value="{{ args.get('du', '') }}"></div>
+  <div class="field"><label for="au">Au</label><input type="date" id="au" name="au" value="{{ args.get('au', '') }}"></div>
+  <div class="field"><label for="equipement">Équipement</label><select id="equipement" name="equipement"><option value="">Tous</option>
+    {% for e in equipments %}<option value="{{ e.id }}" {% if args.get('equipement') == e.id|string %}selected{% endif %}>{{ e.name }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="parametre">Paramètre</label><select id="parametre" name="parametre" data-autosubmit><option value="">Tous</option>
+    {% for p in parameters %}<option value="{{ p.id }}" {% if args.get('parametre') == p.id|string %}selected{% endif %}>{{ p.name }} ({{ p.equipment.name }})</option>{% endfor %}</select></div>
+  {% if levels %}<div class="field"><label for="niveau">Niveau</label><select id="niveau" name="niveau"><option value="">Tous</option>
+    {% for l in levels %}<option value="{{ l.id }}" {% if args.get('niveau') == l.id|string %}selected{% endif %}>{{ l.label }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="lot">Lot</label><select id="lot" name="lot"><option value="">Tous</option>
+    {% for l in lots %}<option value="{{ l.id }}" {% if args.get('lot') == l.id|string %}selected{% endif %}>{{ l.lot_number }}</option>{% endfor %}</select></div>{% endif %}
+  <div class="field"><label for="statut">Statut</label><select id="statut" name="statut"><option value="">Tous</option>
+    {% for k, v in status_labels.items() %}<option value="{{ k }}" {% if args.get('statut') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <div class="field"><label for="mode">Mode</label><select id="mode" name="mode"><option value="">Tous</option>
+    {% for k, v in mode_labels.items() %}<option value="{{ k }}" {% if args.get('mode') == k %}selected{% endif %}>{{ v }}</option>{% endfor %}</select></div>
+  <label class="check"><input type="checkbox" name="annules" value="1" {% if args.get('annules') == '1' %}checked{% endif %}> Inclure les annulés</label>
+  <button type="submit">Filtrer</button>
+  {% if can('export.run') %}<a class="button button-secondary" href="{{ url_for('ciq.history_csv', **args.to_dict()) }}">Export CSV</a>{% endif %}
+</form>
+<div class="table-wrap">
+<table>
+  <thead><tr><th>Date</th><th>Paramètre</th><th>Niveau</th><th>Lot</th><th class="num">Valeur</th><th class="num">z</th><th>Statut</th><th>Règles</th><th>Saisi par</th></tr></thead>
+  <tbody>
+  {% for r in page.items %}
+    <tr class="{% if r.voided_at %}voided{% endif %}">
+      <td class="nowrap"><a href="{{ url_for('ciq.run', run_id=r.run_id) }}">{{ r.run_at | dt }}</a></td>
+      <td>{{ r.run.parameter.name }}</td><td>{{ r.level.label }}</td><td>{{ r.lot.lot_number }}</td>
+      <td class="num">{{ r.value | num(r.run.parameter.decimals) }}</td><td class="num">{{ r.z_score | num(2) }}</td>
+      <td>{{ status_badge(r.status, status_labels[r.status]) }}</td>
+      <td class="small">{{ r.rules_triggered | map(attribute='rule') | join(', ') }}</td>
+      <td class="small">{{ r.entered_by.full_name if r.entered_by else "" }}</td>
+    </tr>
+  {% else %}<tr><td colspan="9" class="muted">Aucun résultat.</td></tr>{% endfor %}
+  </tbody>
+</table>
+</div>
+{{ pagination(page, 'ciq.history') }}
+{% endblock %}
