@@ -23,7 +23,7 @@ RUN pip install --upgrade pip && python -c "import tomllib; d = tomllib.load(ope
 print('\n'.join(d['dependencies'] + d['optional-dependencies']['test']))" > /tmp/requirements.txt \
     && pip install -r /tmp/requirements.txt
 COPY . .
-RUN mkdir -p /data/uploads && chown -R labq:labq /data /app
+RUN chmod +x /app/deploy/*.sh && mkdir -p /data/uploads && chown -R labq:labq /data /app
 
 USER labq
 ENV UPLOAD_DIR=/data/uploads
